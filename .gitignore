@@ -1,0 +1,68 @@
+# ============ Python ============
+# 字节码 / 编译产物
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 打包 / 分发
+build/
+dist/
+*.egg-info/
+.eggs/
+MANIFEST
+*.egg
+wheelhouse/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# 测试与覆盖率
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.pytype/
+.ruff_cache/
+
+# 日志与临时文件
+*.log
+*.tmp
+*.bak
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 密钥 / 环境变量（保留 .env.example 作为模板）
+.env
+.env.*
+!.env.example
+
+# ============ JetBrains (PyCharm/IDEA) ============
+.idea/
+*.iml
+/shelf/
+/workspace.xml
+/httpRequests/
+/dataSources/
+/dataSources.local.xml
+out/
+
+# ============ VS Code ============
+.vscode/
+!.vscode/extensions.json
+
+# ============ 系统文件 ============
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ============ 项目文件 ============
+test
