@@ -2,8 +2,8 @@
 
 一个小型 Agent 示例：通过 provider 抽象同时支持本地 Ollama 和 OpenAI 兼容 API。
 
-工具系统支持内置工具函数、外置工具包和纯提示词包，外置包开发指南见
-[docs/tools](docs/tools/README.md)。
+工具系统支持内置工具函数、外置工具包和纯提示词包，外置包按需加载，
+开发指南见 [docs/tools](docs/tools/README.md)。
 
 ## 运行
 

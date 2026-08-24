@@ -16,6 +16,10 @@ Yuki 支持三类工具能力：
 yuki
 ```
 
+外置包默认只被发现，不进入上下文。模型需要某能力时，会先调用
+`list_packages` 查看可用包，再调用 `load_package` 加载；不用时可以
+`unload_package` 卸载。可以用 `AGENT_PACKAGES_PRELOAD` 让某些包启动时就加载。
+
 当前目录已有三个示例包：
 
 ```text
@@ -32,11 +36,22 @@ packages/
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `PACKAGES_DIR` | `packages` | 外置工具包所在目录；相对路径按项目根目录解析，也可写绝对路径 |
+| `AGENT_PACKAGES` | 空 | 可用外置包白名单，逗号分隔；留空表示目录下全部可用 |
+| `AGENT_PACKAGES_PRELOAD` | 空 | 启动即加载的外置包，逗号分隔；留空表示由模型按需加载 |
 
 ## 提示词如何生效
 
-`prompts` 中的提示词会被拼接成系统消息注入对话，因此纯提示词包也能改变模型行为。
-比如 `writing_style` 加载后，模型会收到“回答保持简洁”的提示。
+只有已加载包的 `prompts` 会被拼接进系统消息，因此纯提示词包也能改变模型行为。
+比如 `writing_style` 被加载后，模型会收到“回答保持简洁”的提示；卸载后提示词也随之移除。
+
+## 上下文占用
+
+- 内置工具和 `list_packages / load_package / unload_package` 三个目录工具始终在上下文中。
+- 外置包的工具 schema 和提示词，只有 `load_package` 加载后才进入上下文。
+- 包的执行代码仍然在第一次真正调用工具时才加载。
+
+示例：启动时模型只会看到 `get_name` 和三个目录工具；查询天气前会先
+`load_package("weather")`，之后 `weather_now` 才出现在工具列表里。
 
 ## 安全
 

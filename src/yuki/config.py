@@ -24,3 +24,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 _packages_dir = Path(os.getenv("PACKAGES_DIR", "packages"))
 PACKAGES_DIR = str(_packages_dir if _packages_dir.is_absolute() else PROJECT_ROOT / _packages_dir)
+
+
+def _csv_env(name: str) -> list[str]:
+    value = os.getenv(name, "")
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+AGENT_PACKAGES = _csv_env("AGENT_PACKAGES")
+AGENT_PACKAGES_PRELOAD = _csv_env("AGENT_PACKAGES_PRELOAD")

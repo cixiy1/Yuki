@@ -17,10 +17,27 @@ class Agent:
     ):
         self.model = model
         self.registry = registry
+        self.system_prompt = system_prompt
         self.memory = list(memory or [])
-        if system_prompt and (not self.memory or self.memory[0].get("role") != "system"):
-            self.memory.insert(0, {"role": "system", "content": system_prompt})
+        self._sync_system_prompt()
         self.provider = create_provider(provider, model, **provider_kwargs)
+
+    def _sync_system_prompt(self):
+        """按当前已加载的工具包重写系统消息。"""
+        parts = [self.system_prompt] if self.system_prompt else []
+        registry_prompt = self.registry.system_prompt()
+        if registry_prompt:
+            parts.append(registry_prompt)
+        content = "\n\n".join(parts)
+
+        if content:
+            message = {"role": "system", "content": content}
+            if self.memory and self.memory[0].get("role") == "system":
+                self.memory[0] = message
+            else:
+                self.memory.insert(0, message)
+        elif self.memory and self.memory[0].get("role") == "system":
+            self.memory.pop(0)
 
     def start(self):
         return self.provider.start()
@@ -33,7 +50,9 @@ class Agent:
         return self.provider.chat(self.memory, tools=self.registry.tools)
 
     def execute_tool_calls(self, tool_calls: list[Any]) -> list[dict[str, Any]]:
-        return execute_tool_calls(self.registry, tool_calls)
+        results = execute_tool_calls(self.registry, tool_calls)
+        self._sync_system_prompt()
+        return results
 
     def continue_with_tools(
         self,

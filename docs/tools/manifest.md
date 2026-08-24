@@ -176,6 +176,17 @@ packages/
 - 必填字段缺失、`entry.type` 不支持、提示词文件不存在，都会跳过整个包。
 - 工具名或提示词名与已加载项冲突时，跳过整个包。
 - 跳过时会在启动日志里打印原因，不影响其他包加载。
+- `list_packages`、`load_package`、`unload_package` 是保留工具名，外置包不能用。
+
+## 按需加载
+
+外置包默认只被发现不加载。模型通过三个内置目录工具控制上下文占用：
+
+- `list_packages`：查看可用包及其工具、提示词
+- `load_package`：把某个包的工具和提示词加入上下文
+- `unload_package`：把某个包从上下文卸载
+
+可用包由 `AGENT_PACKAGES` 白名单限制；`AGENT_PACKAGES_PRELOAD` 可以让包启动时就加载。
 
 ## 内置工具
 

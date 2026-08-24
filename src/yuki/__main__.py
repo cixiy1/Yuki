@@ -5,7 +5,13 @@ from typing import cast
 
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
-from yuki.config import AGENT_MODEL, AGENT_PROVIDER, PACKAGES_DIR
+from yuki.config import (
+    AGENT_MODEL,
+    AGENT_PACKAGES,
+    AGENT_PACKAGES_PRELOAD,
+    AGENT_PROVIDER,
+    PACKAGES_DIR,
+)
 from yuki.core.agent import Agent
 from yuki.skills import ToolRegistry
 from yuki.cli import run
@@ -20,13 +26,12 @@ def safe_clean(agent, skip_unload: bool = False):
 
 
 def main():
-    registry = ToolRegistry(PACKAGES_DIR)
-    agent = Agent(
-        AGENT_MODEL,
-        registry,
-        provider=AGENT_PROVIDER,
-        system_prompt=registry.system_prompt(),
+    registry = ToolRegistry(
+        PACKAGES_DIR,
+        available=AGENT_PACKAGES or None,
+        preload=AGENT_PACKAGES_PRELOAD,
     )
+    agent = Agent(AGENT_MODEL, registry, provider=AGENT_PROVIDER)
     atexit.register(safe_clean, agent)
 
     try:
