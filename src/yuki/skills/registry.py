@@ -17,12 +17,12 @@ META_NAMES = {"list_packages", "load_package", "unload_package"}
 META_TOOLS = [
     {
         "name": "list_packages",
-        "description": "列出当前可用的外置工具包，包括包内工具和提示词",
+        "description": "列出当前可用的外置工具包；当现有工具无法满足用户需求时，先调用本工具查找可加载的包",
         "parameters": {"type": "object", "properties": {}},
     },
     {
         "name": "load_package",
-        "description": "加载一个外置工具包，之后它的工具和提示词才进入上下文",
+        "description": "加载一个外置工具包，之后它的工具和提示词才进入上下文；需要某项能力但当前没有对应工具时，用本工具加载对应包",
         "parameters": {
             "type": "object",
             "required": ["package_id"],
@@ -211,8 +211,13 @@ class ToolRegistry:
         self._prompts[name] = prompt
 
     def system_prompt(self) -> str:
-        """把已加载外置包的提示词拼成系统消息。"""
+        """生成系统消息：按需加载指引 + 已加载外置包的提示词。"""
         parts = []
+        if self._packages:
+            parts.append(
+                "外置工具包按需加载：当现有工具无法满足用户需求时，"
+                "先调用 list_packages 查看可用包，再调用 load_package 加载对应包后继续。"
+            )
         for prompt in self._prompts.values():
             parts.append(f"[{prompt['name']}]\n{prompt['content'].strip()}")
         return "\n\n".join(parts)
