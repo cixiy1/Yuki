@@ -1,6 +1,6 @@
 from typing import Any, Iterator, Mapping, Optional, Sequence, cast
 
-from ..config import OPENAI_API_KEY, OPENAI_BASE_URL
+from ..config import AGENT_THINK, OPENAI_API_KEY, OPENAI_BASE_URL
 from .base import ChatChunk, Provider
 
 
@@ -25,6 +25,9 @@ class ApiProvider(Provider):
         **kwargs,
     ) -> Iterator[ChatChunk]:
         kwargs.pop("stream", None)
+        if AGENT_THINK:
+            extra_body = kwargs.setdefault("extra_body", {})
+            extra_body.setdefault("thinking", {"type": "enabled"})
         stream = self.client.chat.completions.create(
             model=self.model,
             messages=cast(Any, messages),
@@ -37,8 +40,9 @@ class ApiProvider(Provider):
             if choice is None:
                 continue
             delta = choice.delta
+            thinking = getattr(delta, "reasoning_content", None) or getattr(delta, "thinking", None)
             yield ChatChunk(
-                thinking=getattr(delta, "thinking", None),
+                thinking=thinking,
                 content=delta.content,
                 tool_calls=list(delta.tool_calls or []),
                 done=bool(choice.finish_reason),
