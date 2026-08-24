@@ -18,22 +18,36 @@ class Response:
     content: str = ""
     tool_calls: list[Any] = field(default_factory=list)
     _iterator: Iterator[ChatChunk] = field(init=False, repr=False)
+    _finished: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self):
         self._iterator = iter(self.stream)
 
-    def next_chunk(self) -> Optional[ChatChunk]:
+    def next_event(self) -> Optional[dict[str, Any]]:
+        if self._finished:
+            return None
         try:
             chunk = next(self._iterator)
         except StopIteration:
+            self._finished = True
             return None
+
+        event = None
         if chunk.thinking and chunk.thinking.strip():
             self.thinking += chunk.thinking
-        if chunk.tool_calls:
+            event = {"type": "thinking", "text": chunk.thinking.rstrip()}
+        elif chunk.tool_calls:
             self.tool_calls.extend(chunk.tool_calls)
-        if chunk.content and chunk.content.strip():
+            event = {"type": "tool_calls", "calls": list(chunk.tool_calls)}
+        elif chunk.content and chunk.content.strip():
             self.content += chunk.content
-        return chunk
+            event = {"type": "content", "text": chunk.content.rstrip()}
+
+        if chunk.done:
+            self._finished = True
+        if event is None and not self._finished:
+            return self.next_event()
+        return event
 
 
 def output_response(stream: Iterator[ChatChunk]) -> Response:
@@ -55,18 +69,18 @@ def render_response(out: Response) -> list[Any]:
         return next_state
 
     while True:
-        chunk = out.next_chunk()
-        if chunk is None:
+        event = out.next_event()
+        if event is None:
             break
-        if chunk.thinking and chunk.thinking.strip():
+        if event["type"] == "thinking":
             state = switch_state(state, "thinking", "思考：")
-            print(chunk.thinking.rstrip(), end="", flush=True)
-        if chunk.tool_calls:  # 真值判断，空列表跳过
+            print(event["text"], end="", flush=True)
+        elif event["type"] == "tool_calls":
             state = switch_state(state, "tool_calling", "工具调用：")
-            print(chunk.tool_calls, end="", flush=True)
-        if chunk.content and chunk.content.strip():
+            print(event["calls"], end="", flush=True)
+        elif event["type"] == "content":
             state = switch_state(state, "ans", "回答：")
-            print(chunk.content.rstrip(), end="", flush=True)
+            print(event["text"], end="", flush=True)
     print()
     return out.tool_calls
 
