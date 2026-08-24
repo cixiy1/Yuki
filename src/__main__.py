@@ -1,11 +1,15 @@
 import atexit
+import os
 
-import models
-import skills
+from .models import Agent
+from .skills import Skills
 
-# 提前实例化工具类
-skills.Skills()
-yuki = models.Agent("qwen3:8b", skills.Skills())
+SKILLS = Skills()
+yuki = Agent(
+    os.getenv("AGENT_MODEL", "qwen3:8b"),
+    SKILLS,
+    provider=os.getenv("AGENT_PROVIDER", "ollama"),
+)
 
 
 def main():
@@ -29,4 +33,4 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         # safe_clean(yuki)
-        print(".\n正在已退出")
+        print(".\n正在退出")

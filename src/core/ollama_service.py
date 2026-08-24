@@ -1,5 +1,6 @@
 import subprocess
 import socket
+import sys
 import time
 from typing import Optional
 
@@ -26,11 +27,12 @@ def start_ollama_service():
 
     print("未检测到Ollama服务，正在启动...")
     global ollama_proc
+    creationflags = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
     ollama_proc = subprocess.Popen(
         ["ollama", "serve"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        creationflags=subprocess.CREATE_NO_WINDOW
+        **creationflags,
     )
     time.sleep(2)  # 等待服务初始化
     print("Ollama 服务已启动")

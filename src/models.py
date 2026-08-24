@@ -1,45 +1,26 @@
-import ollama
-import skills
-import core.ollama_service
+from typing import Optional
 
-# 提前实例化工具类
-skills.Skills()
+from .providers import create_provider
+from .skills import Skills
 
 
 class Agent:
-    def __init__(self, model, skill, memory=None):
-        if memory is None:
-            memory = []
+    def __init__(self, model: str, skill: Skills, provider: str = "ollama", memory: Optional[list] = None, **provider_kwargs):
         self.model = model
-        self.memory = memory
         self.skill = skill
+        self.memory = memory or []
+        self.provider = create_provider(provider, model, **provider_kwargs)
 
-    @staticmethod
-    def start():
-        return core.ollama_service.start_ollama_service()
+    def start(self):
+        return self.provider.start()
 
     def close(self):
-        # 回收模型
-        try:
-            ollama.generate(model=self.model, prompt="", keep_alive="0s")
-            print("模型已回收")
-        except Exception as e:
-            print("模型回收失败：", e)
-        # 结束ollama进程
-        return core.ollama_service.stop_ollama_service()
+        return self.provider.close()
 
-    def send_message(self, user_message):
-        user_message = {"role": "user", "content": user_message}
-
-        stream = ollama.chat(
-            model=self.model,
-            messages=self.memory + [user_message],
-            tools=self.skill.tools,
-            stream=True,
-            think=True
-        )
+    def send_message(self, user_message: str) -> str:
+        messages = self.memory + [{"role": "user", "content": user_message}]
+        stream = self.provider.chat(messages, tools=self.skill.tools)
         self.output_response(stream)
-
         return "本次回答结束"
 
     @staticmethod
@@ -53,26 +34,18 @@ class Agent:
                 print(label, end="")
             return next_state
 
-        thinking = ""  # 累积，供后续使用
-        content = ""
-        tool_calls = []
-
         for chunk in stream:
             if chunk.done:
                 continue
-            msg = chunk.message
-            if msg.thinking is not None:
+            if chunk.thinking is not None:
                 state = switch_state(state, "thinking", "思考：")
-                thinking += msg.thinking
-                print(msg.thinking, end="", flush=True)
-            elif msg.tool_calls:  # 真值判断，空列表跳过
+                print(chunk.thinking, end="", flush=True)
+            elif chunk.tool_calls:  # 真值判断，空列表跳过
                 state = switch_state(state, "tool_calling", "工具调用：")
-                tool_calls.extend(msg.tool_calls)
-                print(msg.tool_calls, end="", flush=True)
-            elif msg.content is not None:
+                print(chunk.tool_calls, end="", flush=True)
+            elif chunk.content is not None:
                 state = switch_state(state, "ans", "回答：")
-                content += msg.content
-                print(msg.content, end="", flush=True)
+                print(chunk.content, end="", flush=True)
         print()
 
         return True

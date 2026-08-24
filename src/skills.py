@@ -26,7 +26,7 @@ class Skills:
                     "type": "object",
                     "required": ["name"],
                     "properties": {
-                        "city": {
+                        "name": {
                             "type": "string",
                         }
                     }
