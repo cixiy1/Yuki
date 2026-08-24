@@ -2,9 +2,11 @@ import os
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
 except ImportError:
-    pass
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()
 
 AGENT_PROVIDER = os.getenv("AGENT_PROVIDER", "ollama")
 
