@@ -11,6 +11,7 @@ if load_dotenv is not None:
 AGENT_PROVIDER = os.getenv("AGENT_PROVIDER", "ollama")
 
 AGENT_MODEL = os.getenv("AGENT_MODEL", "qwen3:8b")
+AGENT_THINK = os.getenv("AGENT_THINK", "true").lower() in {"1", "true", "yes"}
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 

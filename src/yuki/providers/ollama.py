@@ -6,7 +6,7 @@ from typing import Any, Iterator, Mapping, Optional, Sequence
 
 import ollama
 
-from ..config import OLLAMA_HOST, OLLAMA_PORT
+from ..config import AGENT_THINK, OLLAMA_HOST, OLLAMA_PORT
 from .base import ChatChunk, Provider
 
 ollama_proc: Optional[subprocess.Popen] = None
@@ -72,7 +72,7 @@ class OllamaProvider(Provider):
         tools: Optional[Sequence[Mapping[str, Any]]] = None,
         **kwargs,
     ) -> Iterator[ChatChunk]:
-        kwargs.setdefault("think", True)
+        kwargs.setdefault("think", AGENT_THINK)
         stream = ollama.chat(
             model=self.model,
             messages=messages,
