@@ -45,7 +45,10 @@ def merge_tool_calls(tool_calls: list[Any]) -> list[dict[str, Any]]:
                 arguments = json.loads(arguments)
             except json.JSONDecodeError:
                 arguments = {}
-        calls.append({"name": entry["name"], "arguments": arguments})
+        call = {"name": entry["name"], "arguments": arguments}
+        if entry.get("id"):
+            call["id"] = entry["id"]
+        calls.append(call)
     return calls
 
 

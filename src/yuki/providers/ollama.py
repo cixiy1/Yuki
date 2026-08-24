@@ -97,3 +97,19 @@ class OllamaProvider(Provider):
             except Exception as err:
                 print("模型回收失败：", err)
         return stop_ollama_service()
+
+    def build_tool_messages(
+        self,
+        tool_calls: list[dict[str, Any]],
+        results: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        assistant = {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {"function": {"name": call["name"], "arguments": call["arguments"]}}
+                for call in tool_calls
+            ],
+        }
+        tool_messages = [{"role": "tool", "content": result["content"]} for result in results]
+        return [assistant] + tool_messages

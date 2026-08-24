@@ -1,3 +1,4 @@
+import json
 from typing import Any, Iterator, Mapping, Optional, Sequence, cast
 
 from ..config import AGENT_THINK, OPENAI_API_KEY, OPENAI_BASE_URL
@@ -50,3 +51,33 @@ class ApiProvider(Provider):
 
     def close(self, skip_unload: bool = False):
         self.client.close()
+
+    def build_tool_messages(
+        self,
+        tool_calls: list[dict[str, Any]],
+        results: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        assistant = {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": call.get("id") or f"call_{index}",
+                    "type": "function",
+                    "function": {
+                        "name": call["name"],
+                        "arguments": json.dumps(call["arguments"], ensure_ascii=False),
+                    },
+                }
+                for index, call in enumerate(tool_calls)
+            ],
+        }
+        tool_messages = [
+            {
+                "role": "tool",
+                "tool_call_id": call.get("id") or f"call_{index}",
+                "content": result["content"],
+            }
+            for index, (call, result) in enumerate(zip(tool_calls, results))
+        ]
+        return [assistant] + tool_messages

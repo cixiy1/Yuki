@@ -25,6 +25,14 @@ class Provider(ABC):
     ) -> Iterator[ChatChunk]:
         """调用模型并返回统一格式的流式结果"""
 
+    @abstractmethod
+    def build_tool_messages(
+        self,
+        tool_calls: list[dict[str, Any]],
+        results: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """把工具调用和结果构造成可继续对话的消息"""
+
     def start(self) -> bool:
         return True
 

@@ -94,6 +94,12 @@ def run(agent: Agent) -> None:
             break
         out = output_response(agent.send_message(user_input))
         tool_calls = render_response(out)
-        if tool_calls:
-            for result in agent.execute_tool_calls(tool_calls):
+        while tool_calls:
+            results = agent.execute_tool_calls(tool_calls)
+            for result in results:
                 print(f"工具结果：{result['content']}")
+            out = output_response(agent.continue_with_tools(tool_calls, results))
+            tool_calls = render_response(out)
+        if out.content:
+            agent.memory.append({"role": "assistant", "content": out.content})
+                
