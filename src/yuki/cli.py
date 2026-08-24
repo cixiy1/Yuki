@@ -110,6 +110,7 @@ def run(agent: Agent) -> None:
             continue
         if user_input.lower() in EXIT_COMMANDS:
             break
+        active_packages = agent.registry.active_packages
         out = output_response(agent.send_message(user_input))
         tool_calls = render_response(out)
         while tool_calls:
@@ -118,6 +119,9 @@ def run(agent: Agent) -> None:
                 print(f"工具结果：{result['content']}")
             out = output_response(agent.continue_with_tools(tool_calls, results))
             tool_calls = render_response(out)
+        changed = agent.restore_packages(active_packages)
+        if changed:
+            print(f"外置包已还原：{'、'.join(changed)}")
         if out.content:
             agent.memory.append({"role": "assistant", "content": out.content})
                 

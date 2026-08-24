@@ -187,6 +187,7 @@ packages/
 - `unload_package`：把某个包从上下文卸载
 
 可用包由 `AGENT_PACKAGES` 白名单限制；`AGENT_PACKAGES_PRELOAD` 可以让包启动时就加载。
+每轮对话结束后，外置包状态会自动还原到本轮开始前，临时加载的包会被卸载。
 
 ## 内置工具
 

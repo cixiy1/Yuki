@@ -49,6 +49,8 @@ packages/
 - 内置工具和 `list_packages / load_package / unload_package` 三个目录工具始终在上下文中。
 - 外置包的工具 schema 和提示词，只有 `load_package` 加载后才进入上下文。
 - 包的执行代码仍然在第一次真正调用工具时才加载。
+- 每轮对话结束会把外置包状态还原到本轮开始前：本轮临时加载的包自动卸载，
+  `AGENT_PACKAGES_PRELOAD` 预加载的包恢复常驻。
 
 示例：启动时模型只会看到 `get_name` 和三个目录工具；查询天气前会先
 `load_package("weather")`，之后 `weather_now` 才出现在工具列表里。

@@ -54,6 +54,12 @@ class Agent:
         self._sync_system_prompt()
         return results
 
+    def restore_packages(self, package_ids: list[str]) -> list[str]:
+        """还原外置包状态，并同步系统消息。"""
+        changed = self.registry.restore_packages(package_ids)
+        self._sync_system_prompt()
+        return changed
+
     def continue_with_tools(
         self,
         tool_calls: list[Any],

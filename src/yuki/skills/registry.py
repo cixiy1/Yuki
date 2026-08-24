@@ -182,6 +182,20 @@ class ToolRegistry:
         self._active_packages.remove(package_id)
         return f"已卸载 {package_id}"
 
+    def restore_packages(self, target: list[str]) -> list[str]:
+        """把活动包还原到 target，返回发生变化的包 id。"""
+        target_set = set(target)
+        changed = []
+        for package_id in list(self._active_packages):
+            if package_id not in target_set:
+                self.deactivate_package(package_id)
+                changed.append(package_id)
+        for package_id in target:
+            if package_id not in self._active_packages:
+                self.activate_package(package_id)
+                changed.append(package_id)
+        return changed
+
     def register_tool(self, tool: dict[str, Any]) -> None:
         name = tool["name"]
         if name in META_NAMES:
