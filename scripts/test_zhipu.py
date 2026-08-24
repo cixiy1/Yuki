@@ -7,7 +7,7 @@ from typing import cast
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent / "src"))
 
 from yuki import Agent, Skills
-from yuki.cli import render_response
+from yuki.cli import output_response, render_response
 from yuki.config import AGENT_MODEL, OPENAI_API_KEY, OPENAI_BASE_URL
 
 
@@ -19,7 +19,8 @@ def main():
         api_key=OPENAI_API_KEY,
         base_url=OPENAI_BASE_URL,
     )
-    render_response(agent.send_message("你好，请用一句话介绍你自己。"))
+    response = output_response(agent.send_message("你好，请用一句话介绍你自己。"))
+    render_response(response)
     agent.close()
 
 
