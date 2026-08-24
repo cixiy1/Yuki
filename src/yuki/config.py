@@ -18,3 +18,5 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "127.0.0.1")
 OLLAMA_PORT = int(os.getenv("OLLAMA_PORT", "11434"))
+
+PACKAGES_DIR = os.getenv("PACKAGES_DIR", "packages")

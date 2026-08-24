@@ -3,7 +3,7 @@
 import json
 from typing import Any
 
-from ..skills import Skills
+from ..skills import ToolRegistry
 
 
 def parse_tool_call(call: Any) -> tuple[str, Any]:
@@ -52,9 +52,9 @@ def merge_tool_calls(tool_calls: list[Any]) -> list[dict[str, Any]]:
     return calls
 
 
-def execute_tool_calls(skill: Skills, tool_calls: list[Any]) -> list[dict[str, Any]]:
+def execute_tool_calls(registry: ToolRegistry, tool_calls: list[Any]) -> list[dict[str, Any]]:
     results = []
     for call in merge_tool_calls(tool_calls):
-        content = skill.execute(call["name"], call["arguments"])
+        content = registry.execute(call["name"], call["arguments"])
         results.append({"role": "tool", "name": call["name"], "content": content})
     return results

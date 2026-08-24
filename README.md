@@ -2,6 +2,9 @@
 
 一个小型 Agent 示例：通过 provider 抽象同时支持本地 Ollama 和 OpenAI 兼容 API。
 
+工具系统支持内置工具函数、外置工具包和纯提示词包，外置包开发指南见
+[docs/tools](docs/tools/README.md)。
+
 ## 运行
 
 ```bash
@@ -37,7 +40,11 @@ src/
       ollama.py            # Ollama 本地服务与 provider
       api.py               # OpenAI 兼容 API provider
     skills/                # 工具注册与实现
-      registry.py
-docs/                      # 开发参考资料
+      registry.py          # ToolRegistry：统一内置工具与外置包
+      builtin.py           # 内置工具
+      external.py          # 外置包发现与校验
+packages/                  # 外置工具包目录
+docs/
+  tools/                   # 工具系统开发指南
 pyproject.toml
 ```

@@ -6,7 +6,7 @@ from typing import cast
 
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent / "src"))
 
-from yuki import Agent, Skills
+from yuki import Agent, ToolRegistry
 from yuki.cli import output_response, render_response
 from yuki.config import AGENT_MODEL, OPENAI_API_KEY, OPENAI_BASE_URL
 
@@ -14,7 +14,7 @@ from yuki.config import AGENT_MODEL, OPENAI_API_KEY, OPENAI_BASE_URL
 def main():
     agent = Agent(
         AGENT_MODEL,
-        Skills(),
+        ToolRegistry(),
         provider="api",
         api_key=OPENAI_API_KEY,
         base_url=OPENAI_BASE_URL,

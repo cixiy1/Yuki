@@ -2,6 +2,6 @@
 
 from .core.agent import Agent
 from .providers import create_provider
-from .skills import Skills
+from .skills import ToolRegistry
 
-__all__ = ["Agent", "Skills", "create_provider"]
+__all__ = ["Agent", "ToolRegistry", "create_provider"]

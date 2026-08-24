@@ -1,0 +1,183 @@
+# manifest.json 字段参考
+
+每个外置工具包是一个包含 `manifest.json` 的目录。manifest 声明包的元信息、工具和提示词，
+agent 启动时读取它，真正执行工具时才加载代码。
+
+## 目录约定
+
+```text
+packages/
+  <package_id>/
+    manifest.json
+    tool.py            # 可选：python 入口
+    scripts/...        # 可选：command 入口
+    skill.md           # 可选：提示词正文
+```
+
+## 最外层字段
+
+| 字段 | 必填 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| `id` | 是 | string | 包的唯一标识，用于日志和冲突判断 |
+| `name` | 否 | string | 包的人类可读名称，默认等于 `id` |
+| `version` | 否 | string | 包版本号 |
+| `description` | 否 | string | 包简介，给人看，不给模型看 |
+| `tools` | 否 | array | 工具列表，纯提示词包可以省略 |
+| `prompts` | 否 | array | 提示词列表，没有提示词的包可以省略 |
+
+## tools[] 字段
+
+| 字段 | 必填 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| `name` | 是 | string | 工具名，模型调用时使用，包内和跨包都不能重复 |
+| `description` | 是 | string | 工具说明，会发给模型 |
+| `parameters` | 是 | object | 参数结构，JSON Schema |
+| `entry` | 是 | object | 工具执行入口 |
+
+## entry 字段
+
+`entry.type` 决定执行方式，二选一。
+
+### python 入口
+
+| 字段 | 必填 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| `type` | 是 | string | `"python"` |
+| `module` | 是 | string | 包内 Python 文件路径，例如 `tool.py` |
+| `handler` | 是 | string | 模块里的函数名 |
+
+调用时会把模型参数作为关键字参数传入 handler，handler 的返回值转成字符串作为工具结果。
+
+### command 入口
+
+| 字段 | 必填 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| `type` | 是 | string | `"command"` |
+| `command` | 是 | array[string] | 要执行的命令，例如 `["{python}", "scripts/echo.py"]` |
+
+`{python}` 会被替换为当前 Python 解释器路径。调用时模型参数以 JSON 写入 stdin，
+程序把结果打印到 stdout，非零退出码视为执行失败。
+
+## parameters 字段
+
+`parameters` 是 JSON Schema，常见字段：
+
+| 字段 | 说明 |
+| --- | --- |
+| `type` | 参数整体类型，函数参数一般用 `"object"` |
+| `required` | 必填参数名数组 |
+| `properties` | 具体参数定义，每个键是一个参数名 |
+| `properties.<name>.type` | 参数类型，如 `"string"`、`"number"`、`"boolean"` |
+| `properties.<name>.description` | 参数说明，帮助模型正确传值 |
+
+## prompts[] 字段
+
+| 字段 | 必填 | 类型 | 说明 |
+| --- | --- | --- | --- |
+| `name` | 是 | string | 提示词名，包内不能重复 |
+| `description` | 是 | string | 提示词描述，说明什么时候应该生效 |
+| `path` | 是 | string | 提示词文件路径，相对包目录，例如 `skill.md` |
+
+提示词内容会被注入系统消息。
+
+## 完整示例
+
+### python 工具 + 提示词
+
+```json
+{
+  "id": "weather",
+  "name": "天气工具包",
+  "version": "1.0.0",
+  "description": "查询指定城市当前气温",
+  "tools": [
+    {
+      "name": "weather_now",
+      "description": "查询指定城市当前气温",
+      "parameters": {
+        "type": "object",
+        "required": ["city"],
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "城市英文名，例如 New York"
+          }
+        }
+      },
+      "entry": {
+        "type": "python",
+        "module": "tool.py",
+        "handler": "weather_now"
+      }
+    }
+  ],
+  "prompts": [
+    {
+      "name": "weather_guide",
+      "description": "天气查询工具的补充使用说明",
+      "path": "skill.md"
+    }
+  ]
+}
+```
+
+### command 工具
+
+```json
+{
+  "id": "echo",
+  "name": "回声工具包",
+  "version": "1.0.0",
+  "description": "演示 command 类型的工具入口",
+  "tools": [
+    {
+      "name": "echo_text",
+      "description": "把一段文本原样返回",
+      "parameters": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "要返回的文本"
+          }
+        }
+      },
+      "entry": {
+        "type": "command",
+        "command": ["{python}", "scripts/echo.py"]
+      }
+    }
+  ]
+}
+```
+
+### 纯提示词包
+
+```json
+{
+  "id": "writing_style",
+  "name": "写作风格包",
+  "version": "1.0.0",
+  "description": "让回答保持简洁",
+  "prompts": [
+    {
+      "name": "concise_zh",
+      "description": "回答保持简洁、直白",
+      "path": "skill.md"
+    }
+  ]
+}
+```
+
+## 校验规则
+
+- `manifest.json` 必须是合法 JSON，文件缺失或解析失败会跳过整个包。
+- 必填字段缺失、`entry.type` 不支持、提示词文件不存在，都会跳过整个包。
+- 工具名或提示词名与已加载项冲突时，跳过整个包。
+- 跳过时会在启动日志里打印原因，不影响其他包加载。
+
+## 内置工具
+
+内置工具不需要 manifest，直接定义在 `src/yuki/skills/builtin.py`，
+结构只有 `name / description / parameters / handler` 四个字段，handler 是 Python 函数。
