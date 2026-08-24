@@ -14,13 +14,15 @@ def run(agent: Agent) -> None:
             continue
         if user_input.lower() in EXIT_COMMANDS:
             break
-        tool_calls = output_response(agent.send_message(user_input))
+        tool_calls = render_response(agent.send_message(user_input))
         if tool_calls:
             for result in agent.execute_tool_calls(tool_calls):
                 print(f"工具结果：{result['content']}")
 
 
-def output_response(stream: Iterator[ChatChunk]) -> list[Any]:
+
+
+def render_response(stream: Iterator[ChatChunk]) -> list[Any]:
     state = "initial"  # initial | thinking | tool_calling | ans
     tool_calls = []
 
