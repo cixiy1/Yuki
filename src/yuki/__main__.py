@@ -4,29 +4,28 @@ from .config import MODEL, PROVIDER
 from .core.agent import Agent
 from .skills import Skills
 
-SKILLS = Skills()
-yuki = Agent(MODEL, SKILLS, provider=PROVIDER)
+
+def safe_clean(agent, skip_unload: bool = False):
+    try:
+        agent.close(skip_unload=skip_unload)
+        print("资源清理完成")
+    except Exception as err:
+        print(f"资源清理异常：{repr(err)}")
 
 
 def main():
-    yuki.start()
-    user_input = input("user：").strip() or "查看一下纽约天气"
-    yuki.send_message(user_input)
+    skills = Skills()
+    agent = Agent(MODEL, skills, provider=PROVIDER)
+    atexit.register(safe_clean, agent)
 
-
-def safe_clean(agent):
     try:
-        agent.close()
-        print("程序正常退出，资源清理执行成功")
-    except Exception as err:
-        print(f"清理函数执行异常：{repr(err)}")
-
-
-atexit.register(safe_clean, yuki)
+        agent.start()
+        user_input = input("user：").strip() or "查看一下纽约天气"
+        agent.send_message(user_input)
+    except KeyboardInterrupt:
+        print(".\n正在退出")
+        safe_clean(agent, skip_unload=True)
+        atexit.unregister(safe_clean)
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        # safe_clean(yuki)
-        print(".\n正在退出")
+    main()

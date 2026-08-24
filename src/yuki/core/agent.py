@@ -21,8 +21,8 @@ class Agent:
     def start(self):
         return self.provider.start()
 
-    def close(self):
-        return self.provider.close()
+    def close(self, skip_unload: bool = False):
+        return self.provider.close(skip_unload=skip_unload)
 
     def send_message(self, user_message: str) -> str:
         messages = self.memory + [{"role": "user", "content": user_message}]

@@ -44,5 +44,5 @@ class ApiProvider(Provider):
                 done=bool(choice.finish_reason),
             )
 
-    def close(self):
+    def close(self, skip_unload: bool = False):
         self.client.close()

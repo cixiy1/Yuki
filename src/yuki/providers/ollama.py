@@ -88,10 +88,11 @@ class OllamaProvider(Provider):
                 done=chunk.done,
             )
 
-    def close(self):
-        try:
-            ollama.generate(model=self.model, prompt="", keep_alive="0s")
-            print("模型已回收")
-        except Exception as err:
-            print("模型回收失败：", err)
+    def close(self, skip_unload: bool = False):
+        if not skip_unload:
+            try:
+                ollama.generate(model=self.model, prompt="", keep_alive="0s")
+                print("模型已回收")
+            except Exception as err:
+                print("模型回收失败：", err)
         return stop_ollama_service()

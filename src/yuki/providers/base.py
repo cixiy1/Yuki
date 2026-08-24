@@ -28,5 +28,5 @@ class Provider(ABC):
     def start(self) -> bool:
         return True
 
-    def close(self):
+    def close(self, skip_unload: bool = False):
         return None
