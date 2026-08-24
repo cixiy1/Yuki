@@ -13,8 +13,10 @@ pip install -e .
 yuki
 
 # 使用 OpenAI 兼容 API
-AGENT_PROVIDER=api AGENT_MODEL=你的模型名 \
-OPENAI_API_KEY=你的密钥 OPENAI_BASE_URL=https://api.openai.com/v1 \
+AGENT_PROVIDER=api 
+AGENT_MODEL=你的模型名 \
+OPENAI_API_KEY=你的密钥 
+OPENAI_BASE_URL=https://api.openai.com/v1 \
 yuki
 ```
 
