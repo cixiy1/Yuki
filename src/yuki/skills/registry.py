@@ -142,6 +142,10 @@ class ToolRegistry:
                 if package_id in allowed
             }
         self._packages = packages
+        if packages:
+            print(f"可用外置工具包：{'、'.join(packages)}")
+        else:
+            print("可用外置工具包：无")
 
     def activate_package(self, package_id: str) -> str:
         if package_id in self._active_packages:
