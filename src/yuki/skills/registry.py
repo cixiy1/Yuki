@@ -53,3 +53,14 @@ class Skills:
             "张三": "纽约",
         }
         return name_dict.get(name, "Unknown name")
+
+    handlers = {
+        "get_temperature": get_temperature,
+        "get_name": get_name,
+    }
+
+    def execute(self, name: str, arguments: dict[str, Any]) -> str:
+        handler = self.handlers.get(name)
+        if handler is None:
+            return f"Unknown tool: {name}"
+        return str(handler(**arguments))

@@ -2,6 +2,7 @@ from typing import Any, Iterator, Optional
 
 from ..providers import ChatChunk, create_provider
 from ..skills import Skills
+from .tools import execute_tool_calls
 
 
 class Agent:
@@ -27,3 +28,6 @@ class Agent:
     def send_message(self, user_message: str) -> Iterator[ChatChunk]:
         messages = self.memory + [{"role": "user", "content": user_message}]
         return self.provider.chat(messages, tools=self.skill.tools)
+
+    def execute_tool_calls(self, tool_calls: list[Any]) -> list[dict[str, Any]]:
+        return execute_tool_calls(self.skill, tool_calls)
