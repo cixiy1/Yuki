@@ -8,6 +8,20 @@ from .providers import ChatChunk
 
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
+THINK_TAGS = ("<think>", "</think>")
+
+
+def clean_content(text: str, pending: str) -> tuple[str, str]:
+    """去掉内容流里的 think 标签，标签可能被切成多块。"""
+    combined = pending + text
+    for tag in THINK_TAGS:
+        combined = combined.replace(tag, "")
+    for tag in THINK_TAGS:
+        for size in range(len(tag) - 1, 0, -1):
+            if combined.endswith(tag[:size]):
+                return combined[:-size], combined[-size:]
+    return combined, ""
+
 
 @dataclass
 class Response:
@@ -19,6 +33,7 @@ class Response:
     tool_calls: list[Any] = field(default_factory=list)
     _iterator: Iterator[ChatChunk] = field(init=False, repr=False)
     _finished: bool = field(default=False, init=False, repr=False)
+    _content_pending: str = field(default="", init=False, repr=False)
 
     def __post_init__(self):
         self._iterator = iter(self.stream)
@@ -39,9 +54,12 @@ class Response:
         elif chunk.tool_calls:
             self.tool_calls.extend(chunk.tool_calls)
             event = {"type": "tool_calls", "calls": list(chunk.tool_calls)}
-        elif chunk.content and chunk.content.strip():
-            self.content += chunk.content
-            event = {"type": "content", "text": chunk.content.rstrip()}
+        elif chunk.content is not None:
+            clean, pending = clean_content(chunk.content, self._content_pending)
+            self._content_pending = pending
+            if clean.strip():
+                self.content += clean
+                event = {"type": "content", "text": clean.rstrip()}
 
         if chunk.done:
             self._finished = True
