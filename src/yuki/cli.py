@@ -1,5 +1,6 @@
 """命令行交互循环。"""
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Iterator, Optional
 
@@ -9,6 +10,7 @@ from .providers import ChatChunk
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
 THINK_TAGS = ("<think>", "</think>")
+SENTENCE_SPLIT = re.compile(r"(?<=[。！？!?])")
 
 
 def clean_content(text: str, pending: str) -> tuple[str, str]:
@@ -23,6 +25,10 @@ def clean_content(text: str, pending: str) -> tuple[str, str]:
     return combined, ""
 
 
+def split_sentences(text: str) -> list[str]:
+    return [part for part in SENTENCE_SPLIT.split(text) if part]
+
+
 @dataclass
 class Response:
     """流式输出的惰性收集器，渲染时逐块消费并收集。"""
@@ -34,18 +40,21 @@ class Response:
     _iterator: Iterator[ChatChunk] = field(init=False, repr=False)
     _finished: bool = field(default=False, init=False, repr=False)
     _content_pending: str = field(default="", init=False, repr=False)
+    _content_buffer: str = field(default="", init=False, repr=False)
+    _last_sentence: str = field(default="", init=False, repr=False)
+    _flush_pending: str = field(default="", init=False, repr=False)
 
     def __post_init__(self):
         self._iterator = iter(self.stream)
 
     def next_event(self) -> Optional[dict[str, Any]]:
         if self._finished:
-            return None
+            return self._flush_content()
         try:
             chunk = next(self._iterator)
         except StopIteration:
             self._finished = True
-            return None
+            return self._flush_content()
 
         event = None
         if chunk.thinking and chunk.thinking.strip():
@@ -57,15 +66,42 @@ class Response:
         elif chunk.content is not None:
             clean, pending = clean_content(chunk.content, self._content_pending)
             self._content_pending = pending
-            if clean.strip():
-                self.content += clean
-                event = {"type": "content", "text": clean.rstrip()}
+            self._content_buffer += clean
+            event = self._emit_content()
 
         if chunk.done:
             self._finished = True
+            if self._content_buffer:
+                self._flush_pending = self._content_buffer
+                self._content_buffer = ""
         if event is None and not self._finished:
             return self.next_event()
+        if event is None:
+            return self._flush_content()
         return event
+
+    def _emit_content(self) -> Optional[dict[str, Any]]:
+        sentences = split_sentences(self._content_buffer)
+        self._content_buffer = ""
+        emitted = []
+        for sentence in sentences:
+            if sentence == self._last_sentence:
+                continue
+            self._last_sentence = sentence
+            self.content += sentence
+            emitted.append(sentence)
+        if not emitted:
+            return None
+        return {"type": "content", "text": "".join(emitted)}
+
+    def _flush_content(self) -> Optional[dict[str, Any]]:
+        text = self._flush_pending
+        self._flush_pending = ""
+        if not text or text == self._last_sentence:
+            return None
+        self._last_sentence = text
+        self.content += text
+        return {"type": "content", "text": text}
 
 
 def output_response(stream: Iterator[ChatChunk]) -> Response:
