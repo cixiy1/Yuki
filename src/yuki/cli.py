@@ -1,5 +1,4 @@
 """命令行交互循环。"""
-
 from typing import Iterator
 
 from .core.agent import Agent
@@ -31,7 +30,7 @@ def output_response(stream: Iterator[ChatChunk]) -> None:
     for chunk in stream:
         if chunk.done:
             continue
-        if chunk.thinking is not None:
+        if chunk.thinking:
             state = switch_state(state, "thinking", "思考：")
             print(chunk.thinking, end="", flush=True)
         elif chunk.tool_calls:  # 真值判断，空列表跳过
