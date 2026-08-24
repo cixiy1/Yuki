@@ -1,8 +1,9 @@
 import atexit
-import os
 import sys
+from pathlib import Path
+from typing import cast
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
 from yuki.config import AGENT_MODEL, AGENT_PROVIDER
 from yuki.core.agent import Agent

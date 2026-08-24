@@ -1,5 +1,11 @@
 """智谱 API 联调测试模版，直接运行即可发送一条测试消息。"""
 
+import sys
+from pathlib import Path
+from typing import cast
+
+sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent / "src"))
+
 from yuki import Agent, Skills
 from yuki.config import AGENT_MODEL, OPENAI_API_KEY, OPENAI_BASE_URL
 
