@@ -1,14 +1,21 @@
-from typing import Optional
+from typing import Any, Optional
 
-from .providers import create_provider
-from .skills import Skills
+from ..providers import create_provider
+from ..skills import Skills
 
 
 class Agent:
-    def __init__(self, model: str, skill: Skills, provider: str = "ollama", memory: Optional[list] = None, **provider_kwargs):
+    def __init__(
+        self,
+        model: str,
+        skill: Skills,
+        provider: str = "ollama",
+        memory: Optional[list[dict[str, Any]]] = None,
+        **provider_kwargs,
+    ):
         self.model = model
         self.skill = skill
-        self.memory = memory or []
+        self.memory: list[dict[str, Any]] = memory or []
         self.provider = create_provider(provider, model, **provider_kwargs)
 
     def start(self):

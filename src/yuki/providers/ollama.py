@@ -1,8 +1,12 @@
-import subprocess
 import socket
+import subprocess
 import sys
 import time
-from typing import Optional
+from typing import Any, Iterator, Mapping, Optional, Sequence
+
+import ollama
+
+from .base import ChatChunk, Provider
 
 ollama_proc: Optional[subprocess.Popen] = None
 
@@ -55,3 +59,39 @@ def stop_ollama_service():
     ollama_proc = None
     print("Ollama服务已关闭")
     return True
+
+
+class OllamaProvider(Provider):
+    def start(self) -> bool:
+        return start_ollama_service()
+
+    def chat(
+        self,
+        messages: Sequence[Mapping[str, Any]],
+        tools: Optional[Sequence[Mapping[str, Any]]] = None,
+        **kwargs,
+    ) -> Iterator[ChatChunk]:
+        kwargs.setdefault("think", True)
+        stream = ollama.chat(
+            model=self.model,
+            messages=messages,
+            tools=tools,
+            stream=True,
+            **kwargs,
+        )
+        for chunk in stream:
+            msg = chunk.message
+            yield ChatChunk(
+                thinking=msg.thinking,
+                content=msg.content,
+                tool_calls=list(msg.tool_calls or []),
+                done=chunk.done,
+            )
+
+    def close(self):
+        try:
+            ollama.generate(model=self.model, prompt="", keep_alive="0s")
+            print("模型已回收")
+        except Exception as err:
+            print("模型回收失败：", err)
+        return stop_ollama_service()

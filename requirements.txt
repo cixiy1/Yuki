@@ -1,3 +1,0 @@
-ollama
-openai
-json5

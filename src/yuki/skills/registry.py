@@ -1,5 +1,8 @@
+from typing import Any
+
+
 class Skills:
-    tools = [
+    tools: list[dict[str, Any]] = [
         {
             "type": "function",
             "function": {

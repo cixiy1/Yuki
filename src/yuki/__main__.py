@@ -1,15 +1,11 @@
 import atexit
-import os
 
-from .models import Agent
+from .config import MODEL, PROVIDER
+from .core.agent import Agent
 from .skills import Skills
 
 SKILLS = Skills()
-yuki = Agent(
-    os.getenv("AGENT_MODEL", "qwen3:8b"),
-    SKILLS,
-    provider=os.getenv("AGENT_PROVIDER", "ollama"),
-)
+yuki = Agent(MODEL, SKILLS, provider=PROVIDER)
 
 
 def main():
