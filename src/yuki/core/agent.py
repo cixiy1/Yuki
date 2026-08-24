@@ -1,6 +1,6 @@
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
-from ..providers import create_provider
+from ..providers import ChatChunk, create_provider
 from ..skills import Skills
 
 
@@ -24,35 +24,6 @@ class Agent:
     def close(self, skip_unload: bool = False):
         return self.provider.close(skip_unload=skip_unload)
 
-    def send_message(self, user_message: str) -> str:
+    def send_message(self, user_message: str) -> Iterator[ChatChunk]:
         messages = self.memory + [{"role": "user", "content": user_message}]
-        stream = self.provider.chat(messages, tools=self.skill.tools)
-        self.output_response(stream)
-        return "本次回答结束"
-
-    @staticmethod
-    def output_response(stream):
-        state = "initial"  # initial | thinking | tool_calling | ans
-
-        def switch_state(current_state, next_state, label):
-            if current_state != next_state:
-                if current_state != "initial":
-                    print()  # 段落间换行
-                print(label, end="")
-            return next_state
-
-        for chunk in stream:
-            if chunk.done:
-                continue
-            if chunk.thinking is not None:
-                state = switch_state(state, "thinking", "思考：")
-                print(chunk.thinking, end="", flush=True)
-            elif chunk.tool_calls:  # 真值判断，空列表跳过
-                state = switch_state(state, "tool_calling", "工具调用：")
-                print(chunk.tool_calls, end="", flush=True)
-            elif chunk.content is not None:
-                state = switch_state(state, "ans", "回答：")
-                print(chunk.content, end="", flush=True)
-        print()
-
-        return True
+        return self.provider.chat(messages, tools=self.skill.tools)
