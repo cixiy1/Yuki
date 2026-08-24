@@ -30,9 +30,9 @@ def output_response(stream: Iterator[ChatChunk]) -> None:
     for chunk in stream:
         if chunk.done:
             continue
-        if chunk.thinking:
+        if chunk.thinking and chunk.thinking.strip():
             state = switch_state(state, "thinking", "思考：")
-            print(chunk.thinking, end="", flush=True)
+            print(chunk.thinking.rstrip(), end="", flush=True)
         elif chunk.tool_calls:  # 真值判断，空列表跳过
             state = switch_state(state, "tool_calling", "工具调用：")
             print(chunk.tool_calls, end="", flush=True)
