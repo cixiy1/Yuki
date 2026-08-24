@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# IDEA 配置全部忽略
+.idea/
+*.iml
+
