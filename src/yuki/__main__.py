@@ -1,6 +1,6 @@
 import atexit
 
-from .config import MODEL, PROVIDER
+from .config import AGENT_MODEL, AGENT_PROVIDER
 from .core.agent import Agent
 from .skills import Skills
 
@@ -15,7 +15,7 @@ def safe_clean(agent, skip_unload: bool = False):
 
 def main():
     skills = Skills()
-    agent = Agent(MODEL, skills, provider=PROVIDER)
+    agent = Agent(AGENT_MODEL, skills, provider=AGENT_PROVIDER)
     atexit.register(safe_clean, agent)
 
     try:

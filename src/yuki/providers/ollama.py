@@ -6,12 +6,13 @@ from typing import Any, Iterator, Mapping, Optional, Sequence
 
 import ollama
 
+from ..config import OLLAMA_HOST, OLLAMA_PORT
 from .base import ChatChunk, Provider
 
 ollama_proc: Optional[subprocess.Popen] = None
 
 
-def is_ollama_running(host="127.0.0.1", port=11434, timeout: float = 1) -> bool:
+def is_ollama_running(host=OLLAMA_HOST, port=OLLAMA_PORT, timeout: float = 1) -> bool:
     """检测Ollama服务是否正在运行"""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

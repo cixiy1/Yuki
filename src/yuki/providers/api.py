@@ -1,6 +1,6 @@
-import os
 from typing import Any, Iterator, Mapping, Optional, Sequence, cast
 
+from ..config import OPENAI_API_KEY, OPENAI_BASE_URL
 from .base import ChatChunk, Provider
 
 
@@ -14,8 +14,8 @@ class ApiProvider(Provider):
         except ImportError as err:
             raise ImportError("ApiProvider 需要安装 openai，请先执行 pip install openai") from err
         self.client = OpenAI(
-            api_key=api_key or os.getenv("OPENAI_API_KEY"),
-            base_url=base_url or os.getenv("OPENAI_BASE_URL"),
+            api_key=api_key or OPENAI_API_KEY,
+            base_url=base_url or OPENAI_BASE_URL,
         )
 
     def chat(
