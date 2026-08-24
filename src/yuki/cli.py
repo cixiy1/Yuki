@@ -13,16 +13,17 @@ THINK_TAGS = ("<think>", "</think>")
 SENTENCE_SPLIT = re.compile(r"(?<=[。！？!?])")
 
 
-def clean_content(text: str, pending: str) -> tuple[str, str]:
-    """去掉内容流里的 think 标签，标签可能被切成多块。"""
+def clean_content(text: str, pending: str) -> tuple[str, str, bool]:
+    """去掉内容流里的 think 标签，返回清理文本、待续标签、是否出现过标签。"""
     combined = pending + text
+    saw_tag = any(tag in combined for tag in THINK_TAGS)
     for tag in THINK_TAGS:
         combined = combined.replace(tag, "")
     for tag in THINK_TAGS:
         for size in range(len(tag) - 1, 0, -1):
             if combined.endswith(tag[:size]):
-                return combined[:-size], combined[-size:]
-    return combined, ""
+                return combined[:-size], combined[-size:], saw_tag
+    return combined, "", saw_tag
 
 
 def split_sentences(text: str) -> list[str]:
@@ -43,6 +44,7 @@ class Response:
     _content_buffer: str = field(default="", init=False, repr=False)
     _last_sentence: str = field(default="", init=False, repr=False)
     _flush_pending: str = field(default="", init=False, repr=False)
+    _content_saw_think_tag: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self):
         self._iterator = iter(self.stream)
@@ -64,8 +66,10 @@ class Response:
             self.tool_calls.extend(chunk.tool_calls)
             event = {"type": "tool_calls", "calls": list(chunk.tool_calls)}
         elif chunk.content is not None:
-            clean, pending = clean_content(chunk.content, self._content_pending)
+            clean, pending, saw_tag = clean_content(chunk.content, self._content_pending)
             self._content_pending = pending
+            if saw_tag:
+                self._content_saw_think_tag = True
             self._content_buffer += clean
             event = self._emit_content()
 
@@ -86,7 +90,9 @@ class Response:
         emitted = []
         for sentence in sentences:
             key = sentence.strip()
-            if not key or key == self._last_sentence:
+            if not key:
+                continue
+            if self._content_saw_think_tag and key == self._last_sentence:
                 continue
             self._last_sentence = key
             self.content += sentence
@@ -98,7 +104,9 @@ class Response:
     def _flush_content(self) -> Optional[dict[str, Any]]:
         text = self._flush_pending
         self._flush_pending = ""
-        if not text or text.strip() == self._last_sentence:
+        if not text or (
+            self._content_saw_think_tag and text.strip() == self._last_sentence
+        ):
             return None
         self._last_sentence = text.strip()
         self.content += text
