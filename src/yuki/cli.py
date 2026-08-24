@@ -85,9 +85,10 @@ class Response:
         self._content_buffer = ""
         emitted = []
         for sentence in sentences:
-            if sentence == self._last_sentence:
+            key = sentence.strip()
+            if not key or key == self._last_sentence:
                 continue
-            self._last_sentence = sentence
+            self._last_sentence = key
             self.content += sentence
             emitted.append(sentence)
         if not emitted:
@@ -97,9 +98,9 @@ class Response:
     def _flush_content(self) -> Optional[dict[str, Any]]:
         text = self._flush_pending
         self._flush_pending = ""
-        if not text or text == self._last_sentence:
+        if not text or text.strip() == self._last_sentence:
             return None
-        self._last_sentence = text
+        self._last_sentence = text.strip()
         self.content += text
         return {"type": "content", "text": text}
 
