@@ -11,37 +11,34 @@ EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
 @dataclass
 class Response:
-    """收集到的模型输出，按出现顺序保存。"""
+    """流式输出的惰性收集器，渲染时逐块消费并收集。"""
 
-    events: list[tuple[str, Any]] = field(default_factory=list)
+    stream: Iterator[ChatChunk]
+    thinking: str = ""
+    content: str = ""
+    tool_calls: list[Any] = field(default_factory=list)
 
-    @property
-    def tool_calls(self) -> list[Any]:
-        calls = []
-        for kind, value in self.events:
-            if kind == "tool_calls":
-                calls.extend(value)
-        return calls
+    def __iter__(self):
+        for chunk in self.stream:
+            if chunk.thinking and chunk.thinking.strip():
+                self.thinking += chunk.thinking
+            if chunk.tool_calls:
+                self.tool_calls.extend(chunk.tool_calls)
+            if chunk.content and chunk.content.strip():
+                self.content += chunk.content
+            yield chunk
+            if chunk.done:
+                break
 
 
 def output_response(stream: Iterator[ChatChunk]) -> Response:
-    """拿输出：消费流并收集思考、工具调用、回答。"""
+    """拿输出：把模型流包装成边收集边渲染的 Response。"""
 
-    response = Response()
-    for chunk in stream:
-        if chunk.thinking and chunk.thinking.strip():
-            response.events.append(("thinking", chunk.thinking.rstrip()))
-        if chunk.tool_calls:
-            response.events.append(("tool_calls", list(chunk.tool_calls)))
-        if chunk.content and chunk.content.strip():
-            response.events.append(("content", chunk.content.rstrip()))
-        if chunk.done:
-            break
-    return response
+    return Response(stream)
 
 
-def render_response(response: Response) -> None:
-    """渲染：把收集好的 Response 输出到终端。"""
+def render_response(response: Response) -> list[Any]:
+    """渲染：逐块消费 Response，边收集边打印，返回工具调用。"""
 
     state = "initial"  # initial | thinking | tool_calling | ans
 
@@ -52,17 +49,18 @@ def render_response(response: Response) -> None:
             print(label, end="")
         return next_state
 
-    for kind, value in response.events:
-        if kind == "thinking":
+    for chunk in response:
+        if chunk.thinking and chunk.thinking.strip():
             state = switch_state(state, "thinking", "思考：")
-            print(value, end="", flush=True)
-        elif kind == "tool_calls":
+            print(chunk.thinking.rstrip(), end="", flush=True)
+        if chunk.tool_calls:  # 真值判断，空列表跳过
             state = switch_state(state, "tool_calling", "工具调用：")
-            print(value, end="", flush=True)
-        elif kind == "content":
+            print(chunk.tool_calls, end="", flush=True)
+        if chunk.content and chunk.content.strip():
             state = switch_state(state, "ans", "回答：")
-            print(value, end="", flush=True)
+            print(chunk.content.rstrip(), end="", flush=True)
     print()
+    return response.tool_calls
 
 
 def run(agent: Agent) -> None:
@@ -73,7 +71,7 @@ def run(agent: Agent) -> None:
         if user_input.lower() in EXIT_COMMANDS:
             break
         out = output_response(agent.send_message(user_input))
-        render_response(out)
-        if out.tool_calls:
-            for result in agent.execute_tool_calls(out.tool_calls):
+        tool_calls = render_response(out)
+        if tool_calls:
+            for result in agent.execute_tool_calls(tool_calls):
                 print(f"工具结果：{result['content']}")
