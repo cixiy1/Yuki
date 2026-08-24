@@ -1,8 +1,12 @@
 import atexit
+import os
+import sys
 
-from .config import AGENT_MODEL, AGENT_PROVIDER
-from .core.agent import Agent
-from .skills import Skills
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from yuki.config import AGENT_MODEL, AGENT_PROVIDER
+from yuki.core.agent import Agent
+from yuki.skills import Skills
 
 
 def safe_clean(agent, skip_unload: bool = False):
