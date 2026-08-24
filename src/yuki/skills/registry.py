@@ -65,6 +65,9 @@ class ToolRegistry:
         self._prompts[name] = prompt
 
     def load_packages(self, packages_dir: Path) -> None:
+        if not packages_dir.is_dir():
+            print(f"外置工具包目录不存在：{packages_dir}")
+            return
         for package_dir in discover_packages(packages_dir):
             try:
                 package = load_package(package_dir)

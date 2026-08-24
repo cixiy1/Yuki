@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 try:
     from dotenv import load_dotenv
@@ -19,4 +20,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "127.0.0.1")
 OLLAMA_PORT = int(os.getenv("OLLAMA_PORT", "11434"))
 
-PACKAGES_DIR = os.getenv("PACKAGES_DIR", "packages")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+_packages_dir = Path(os.getenv("PACKAGES_DIR", "packages"))
+PACKAGES_DIR = str(_packages_dir if _packages_dir.is_absolute() else PROJECT_ROOT / _packages_dir)
