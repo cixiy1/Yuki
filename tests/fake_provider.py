@@ -2,8 +2,8 @@
 
 from typing import Any, AsyncIterator, Optional, Sequence
 
-from yuki.config import Settings
-from yuki.providers import ChatChunk, Provider
+from yuki_kernel.config import Settings
+from yuki_kernel.providers import ChatChunk, Provider
 
 
 class FakeProvider(Provider):

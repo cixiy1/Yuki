@@ -5,8 +5,8 @@ import zipfile
 
 import pytest
 
-from yuki.skills.external import PackageError
-from yuki.skills.package_manager import LocalDirSource, PackageManager, ZipSource
+from yuki_kernel.skills.external import PackageError
+from yuki_kernel.skills.package_manager import LocalDirSource, PackageManager, ZipSource
 
 
 @pytest.mark.asyncio

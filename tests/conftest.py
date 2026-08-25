@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from yuki.config import Settings
-from yuki.core.session import SessionStore
+from yuki_kernel.config import Settings
+from yuki_kernel.core.session import SessionStore
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 

@@ -3,7 +3,7 @@
 import pytest
 
 from yuki.cli import output_response
-from yuki.providers import ChatChunk
+from yuki_kernel.providers import ChatChunk
 
 
 @pytest.mark.asyncio

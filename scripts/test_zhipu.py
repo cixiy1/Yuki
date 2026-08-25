@@ -7,7 +7,7 @@ from typing import cast
 
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent / "src"))
 
-from yuki import Agent, Settings, ToolRegistry
+from yuki_kernel import Agent, Settings, ToolRegistry
 from yuki.cli import output_response, render_response
 
 

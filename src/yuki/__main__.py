@@ -10,10 +10,10 @@ from typing import cast
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
 from yuki.cli import cli_approver, run
-from yuki.config import Settings
-from yuki.core.app import App
-from yuki.core.session import SessionStore
-from yuki.skills.package_manager import PackageManager
+from yuki_kernel.config import Settings
+from yuki_kernel.core.app import App
+from yuki_kernel.core.session import SessionStore
+from yuki_kernel.skills.package_manager import PackageManager
 
 
 def _env_mtime(project_root: Path):

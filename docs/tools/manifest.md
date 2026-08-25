@@ -219,8 +219,8 @@ class Greeter:
 
 ## 内置工具
 
-内置工具不需要 manifest，注册表写在 `src/yuki/skills/builtin.py`，
-实现代码放在 `src/yuki/skills/builtins/`。
+内置工具不需要 manifest，注册表写在 `src/yuki_kernel/skills/builtin.py`，
+实现代码放在 `src/yuki_kernel/skills/builtins/`。
 
 `BUILTIN_TOOLS` 里的工具结构与外置包一致：
 
@@ -233,11 +233,11 @@ class Greeter:
 
 `BUILTIN_PROMPTS` 里的提示词结构：
 
-| 字段          | 说明                                         |
-| ------------- | -------------------------------------------- |
-| `name`        | 提示词名                                     |
-| `description` | 提示词描述                                   |
-| `path`        | 相对 `src/yuki/skills/` 的 Markdown 文件路径 |
+| 字段          | 说明                                                |
+| ------------- | --------------------------------------------------- |
+| `name`        | 提示词名                                            |
+| `description` | 提示词描述                                          |
+| `path`        | 相对 `src/yuki_kernel/skills/` 的 Markdown 文件路径 |
 
 内置提示词会被注入系统消息，与外置包的 `prompts` 行为一致。
 

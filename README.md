@@ -41,14 +41,14 @@ CLI 斜杠命令：
 
 ```text
 src/
-  yuki/                    # 主包
-    __main__.py            # 入口
+  yuki_kernel/             # 可嵌入的 agent 内核
     config.py              # Settings：环境变量配置与热加载
-    cli.py                 # 异步 CLI 与斜杠命令
     core/
       agent.py             # Agent：异步闭环 + 摘要 + 审批 + 钩子
       app.py               # 应用容器与热加载
       session.py           # 会话与 JSONL/SQLite 持久化
+      memory.py            # 长期记忆（namespace 隔离）
+      stream.py            # 无头流式收集
       events.py            # 事件类型
       middleware.py        # 中间件链
       bus.py               # 事件总线
@@ -63,6 +63,9 @@ src/
       builtins/            # 内置工具实现
       external.py          # 外置包发现与校验
       package_manager.py   # 本地包安装/卸载/列表
+  yuki/                    # 示例 agent（聊天外壳）
+    __main__.py            # 入口
+    cli.py                 # 异步 CLI 与斜杠命令
 packages/                  # 外置工具包目录
 tests/                     # pytest 契约测试
 docs/

@@ -4,10 +4,10 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Optional
 
-from .core.app import App
-from .core.stream import clean_content, split_sentences
-from .providers import ChatChunk
-from .skills.package_manager import LocalDirSource, ZipSource
+from yuki_kernel.core.app import App
+from yuki_kernel.core.stream import clean_content, split_sentences
+from yuki_kernel.providers import ChatChunk
+from yuki_kernel.skills.package_manager import LocalDirSource, ZipSource
 
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 

@@ -1,6 +1,6 @@
 """内置工具契约。"""
 
-from yuki.skills import ToolRegistry
+from yuki_kernel.skills import ToolRegistry
 
 
 def test_environment_info_available():

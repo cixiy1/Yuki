@@ -2,11 +2,11 @@
 
 import pytest
 
-from yuki.core.agent import Agent
-from yuki.core.errors import ProviderError
-from yuki.providers import ChatChunk
-from yuki.skills import ToolRegistry
-from yuki.skills.types import Tool
+from yuki_kernel.core.agent import Agent
+from yuki_kernel.core.errors import ProviderError
+from yuki_kernel.providers import ChatChunk
+from yuki_kernel.skills import ToolRegistry
+from yuki_kernel.skills.types import Tool
 
 from tests.fake_provider import FakeProvider
 

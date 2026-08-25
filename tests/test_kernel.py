@@ -2,11 +2,11 @@
 
 import pytest
 
-from yuki.core.agent import Agent
-from yuki.core.memory import MemoryStore
-from yuki.core.session import Session, SessionStore
-from yuki.providers import ChatChunk
-from yuki.skills import ToolRegistry
+from yuki_kernel.core.agent import Agent
+from yuki_kernel.core.memory import MemoryStore
+from yuki_kernel.core.session import Session, SessionStore
+from yuki_kernel.providers import ChatChunk
+from yuki_kernel.skills import ToolRegistry
 
 from tests.fake_provider import FakeProvider, env_tool_call_chunk
 
