@@ -6,6 +6,8 @@
 工具系统支持内置工具函数、外置工具包和纯提示词包，外置包按需加载，
 开发指南见 [docs/tools](docs/tools/README.md)。
 
+内核使用指南见 [docs/kernel.md](docs/kernel.md)。
+
 ## 运行
 
 ```bash
