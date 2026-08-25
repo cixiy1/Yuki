@@ -2,6 +2,8 @@
 
 import re
 
+from yuki_kernel.core.app import App
+from yuki_kernel.core.stream import TagFilter
 from yuki_kernel.core.stream import clean_content
 
 SENTENCE_SPLIT = re.compile(r"(?<=[。！？!?])")
@@ -44,3 +46,43 @@ class ContentFilter:
             self.last_sentence = key
             emitted.append(sentence)
         return "".join(emitted)
+
+
+async def render_turn(app: App, line: str) -> None:
+    state = "initial"
+    content_filter = ContentFilter()
+    thinking_filter = TagFilter()
+
+    def switch_state(next_state: str, label: str) -> None:
+        nonlocal state
+        if state != next_state:
+            if state != "initial":
+                print()
+            print(label, end="")
+            state = next_state
+
+    async for event in app.agent.turn_stream(line):
+        if event.kind == "thinking":
+            text = thinking_filter.feed(event.text)
+            if text.strip():
+                switch_state("thinking", "思考：")
+                print(text, end="", flush=True)
+        elif event.kind == "tool_calls":
+            switch_state("tool_calling", "工具调用：")
+            print(event.calls, end="", flush=True)
+        elif event.kind == "content":
+            text = content_filter.feed(event.text)
+            if text:
+                switch_state("ans", "回答：")
+                print(text, end="", flush=True)
+        elif event.kind == "tool_result":
+            print(f"\n工具结果：{event.text}")
+            state = "initial"
+        elif event.kind == "package_restored":
+            print(f"\n外置包已还原：{event.text}")
+            state = "initial"
+    tail = content_filter.finish()
+    if tail:
+        switch_state("ans", "回答：")
+        print(tail, end="", flush=True)
+    print()

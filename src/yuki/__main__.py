@@ -9,7 +9,8 @@ from typing import cast
 
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
-from yuki.cli import cli_approver, run
+from yuki.approver import cli_approver
+from yuki.cli import run
 from yuki_kernel.config import Settings
 from yuki_kernel.core.app import App
 from yuki_kernel.core.session import SessionStore

@@ -2,7 +2,7 @@
 
 import pytest
 
-from yuki.cli import handle_command
+from yuki.commands import handle_command
 from yuki_kernel.core.app import App
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills.package_manager import PackageManager

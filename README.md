@@ -66,8 +66,11 @@ src/
       external.py          # 外置包发现与校验
       package_manager.py   # 本地包安装/卸载/列表
   yuki/                    # 示例 agent（聊天外壳）
-    __main__.py            # 入口
-    cli.py                 # 异步 CLI 与斜杠命令
+    __main__.py            # 入口与组装
+    cli.py                 # 主循环
+    commands.py            # 斜杠命令分发
+    approver.py            # 审批交互
+    rendering.py           # 渲染与清洗
 packages/                  # 外置工具包目录
 tests/                     # pytest 契约测试
 docs/
