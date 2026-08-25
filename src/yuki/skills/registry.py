@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from .builtin import BUILTIN_TOOLS
+from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .external import discover_packages, load_package
 
 PathLike = Union[str, Path]
@@ -117,8 +117,14 @@ class ToolRegistry:
         return sorted(self._active_packages)
 
     def load_builtin(self) -> None:
+        skills_dir = Path(__file__).resolve().parent
         for tool in BUILTIN_TOOLS:
-            self.register_tool(tool)
+            self.register_tool(
+                {**tool, "package": "builtin", "package_dir": str(skills_dir)}
+            )
+        for prompt in BUILTIN_PROMPTS:
+            content = (skills_dir / prompt["path"]).read_text(encoding="utf-8")
+            self.register_prompt({**prompt, "content": content})
 
     def scan_packages(self, packages_dir: Path, available: Optional[list[str]] = None) -> None:
         if not packages_dir.is_dir():

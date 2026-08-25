@@ -41,7 +41,8 @@ src/
       api.py               # OpenAI 兼容 API provider
     skills/                # 工具注册与实现
       registry.py          # ToolRegistry：统一内置工具与外置包
-      builtin.py           # 内置工具
+      builtin.py           # 内置工具注册表
+      builtins/            # 内置工具实现
       external.py          # 外置包发现与校验
 packages/                  # 外置工具包目录
 docs/

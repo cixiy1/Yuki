@@ -4,7 +4,7 @@ Yuki 支持三类工具能力：
 
 | 类型 | 说明 | 位置 |
 | --- | --- | --- |
-| 内置工具函数 | 随代码分发，直接注册 Python handler | `src/yuki/skills/builtin.py` |
+| 内置工具函数 | 随代码分发，声明在 `builtin.py`，实现在 `builtins/` | `src/yuki/skills/builtin.py` |
 | 外置工具包 | 独立文件夹，通过 `manifest.json` 声明工具，入口可以是 Python 代码或命令 | `packages/` |
 | 纯提示词包 | 只有提示词，没有可执行代码，提示词注入系统消息 | `packages/` |
 
@@ -54,6 +54,16 @@ packages/
 
 示例：启动时模型只会看到 `get_name` 和三个目录工具；查询天气前会先
 `load_package("weather")`，之后 `weather_now` 才出现在工具列表里。
+
+## 内置工具
+
+内置工具不经过 `packages/`，注册表写在 `src/yuki/skills/builtin.py`：
+
+- `BUILTIN_TOOLS`：函数工具，`entry` 格式与外置包一致（支持 python 和 command 入口）。
+- `BUILTIN_PROMPTS`：内置提示词，`path` 指向 `builtins/prompts/` 下的 Markdown 文件。
+
+工具实现代码放在 `src/yuki/skills/builtins/`，例如 `people.py`。内置工具
+始终在上下文中，不参与外置包的按需加载。
 
 ## 安全
 

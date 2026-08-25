@@ -1,40 +1,6 @@
-"""内置工具：随代码分发，直接注册为 Python handler。"""
+"""内置工具注册表：只声明内置工具和提示词，具体实现放在 builtins/ 下。"""
 
-from typing import Any
-
-
-def get_temperature(city: str) -> str:
-    temp_dict = {
-        "New York": "22°C",
-        "London": "15°C",
-        "Tokyo": "18°C",
-    }
-    return temp_dict.get(city, "Unknown city")
-
-
-def get_name(name: str) -> str:
-    name_dict = {
-        "张三": "纽约",
-    }
-    return name_dict.get(name, "Unknown name")
-
-
-BUILTIN_TOOLS: list[dict[str, Any]] = [
-    {
-        "name": "get_temperature",
-        "description": "查询指定城市气温",
-        "parameters": {
-            "type": "object",
-            "required": ["city"],
-            "properties": {
-                "city": {
-                    "type": "string",
-                    "description": "(城市)city参数必须用英文名称，例 New York、London",
-                }
-            },
-        },
-        "handler": get_temperature,
-    },
+BUILTIN_TOOLS = [
     {
         "name": "get_name",
         "description": "查询某个人的家庭所在城市",
@@ -47,6 +13,18 @@ BUILTIN_TOOLS: list[dict[str, Any]] = [
                 }
             },
         },
-        "handler": get_name,
+        "entry": {
+            "type": "python",
+            "module": "builtins/people.py",
+            "handler": "get_name",
+        },
+    },
+]
+
+BUILTIN_PROMPTS = [
+    {
+        "name": "builtin_identity",
+        "description": "Yuki 的基础身份说明",
+        "path": "builtins/prompts/identity.md",
     },
 ]

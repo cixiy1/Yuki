@@ -191,5 +191,24 @@ packages/
 
 ## 内置工具
 
-内置工具不需要 manifest，直接定义在 `src/yuki/skills/builtin.py`，
-结构只有 `name / description / parameters / handler` 四个字段，handler 是 Python 函数。
+内置工具不需要 manifest，注册表写在 `src/yuki/skills/builtin.py`，
+实现代码放在 `src/yuki/skills/builtins/`。
+
+`BUILTIN_TOOLS` 里的工具结构与外置包一致：
+
+| 字段 | 说明 |
+| --- | --- |
+| `name` | 工具名 |
+| `description` | 工具说明 |
+| `parameters` | JSON Schema 参数结构 |
+| `entry` | 执行入口，`type` 为 `python` 或 `command`，格式见上文 |
+
+`BUILTIN_PROMPTS` 里的提示词结构：
+
+| 字段 | 说明 |
+| --- | --- |
+| `name` | 提示词名 |
+| `description` | 提示词描述 |
+| `path` | 相对 `src/yuki/skills/` 的 Markdown 文件路径 |
+
+内置提示词会被注入系统消息，与外置包的 `prompts` 行为一致。
