@@ -249,26 +249,25 @@ class Greeter:
 ```python
 BUILTIN_TOOLS = [
     {
-        "name": "get_name",
-        "description": "查询某个人的家庭所在城市",
+        "name": "get_environment_info",
+        "description": "获取当前操作系统、Python 版本、工作目录等环境信息",
         "parameters": {
             "type": "object",
-            "required": ["name"],
-            "properties": {"name": {"type": "string"}},
+            "properties": {},
         },
         "entry": {
             "type": "python",
-            "module": "builtins/people.py",
-            "handler": "get_name",
+            "module": "builtins/environment.py",
+            "handler": "get_environment_info",
         },
     },
 ]
 
 BUILTIN_PROMPTS = [
     {
-        "name": "get_name_guide",
-        "description": "get_name 的使用注意事项",
-        "path": "builtins/prompts/get_name_guide.md",
+        "name": "environment_guide",
+        "description": "命令生成前的环境信息使用提示",
+        "path": "builtins/prompts/environment_guide.md",
     },
 ]
 ```

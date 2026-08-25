@@ -4,6 +4,19 @@ from .types import Tool
 
 BUILTIN_TOOLS: list[Tool] = [
     {
+        "name": "get_environment_info",
+        "description": "获取当前操作系统、Python 版本、工作目录等环境信息，生成命令前先调用",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+        },
+        "entry": {
+            "type": "python",
+            "module": "builtins/environment.py",
+            "handler": "get_environment_info",
+        },
+    },
+    {
         "name": "get_name",
         "description": "查询某个人的家庭所在城市",
         "parameters": {
@@ -30,8 +43,8 @@ BUILTIN_PROMPTS = [
         "path": "builtins/prompts/identity.md",
     },
     {
-        "name": "get_name_guide",
-        "description": "get_name 的使用注意事项",
-        "path": "builtins/prompts/get_name_guide.md",
+        "name": "environment_guide",
+        "description": "命令生成前的环境信息使用提示",
+        "path": "builtins/prompts/environment_guide.md",
     },
 ]
