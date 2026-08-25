@@ -1,13 +1,11 @@
 """无头流式收集与内容清洗。"""
 
-import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator
 
 from ..providers import ChatChunk
 
 THINK_TAGS = ("<think>", "</think>")
-SENTENCE_SPLIT = re.compile(r"(?<=[。！？!?])")
 
 
 def clean_content(text: str, pending: str) -> tuple[str, str, bool]:
@@ -22,16 +20,31 @@ def clean_content(text: str, pending: str) -> tuple[str, str, bool]:
                 return combined[:-size], combined[-size:], saw_tag
     return combined, "", saw_tag
 
-
-def split_sentences(text: str) -> list[str]:
-    return [part for part in SENTENCE_SPLIT.split(text) if part]
-
-
 @dataclass
 class Collected:
     thinking: str = ""
     content: str = ""
     tool_calls: list[Any] = field(default_factory=list)
+
+
+@dataclass
+class StreamEvent:
+    """turn_stream 输出的事件，供外部软件渲染。"""
+
+    kind: str  # thinking | content | tool_calls | tool_result | package_restored | done
+    text: str = ""
+    calls: list[Any] = field(default_factory=list)
+
+
+class TagFilter:
+    """只去掉 think 标签，保留其余文本。"""
+
+    def __init__(self):
+        self.pending = ""
+
+    def feed(self, text: str) -> str:
+        clean, self.pending, _ = clean_content(text, self.pending)
+        return clean
 
 
 async def collect_stream(stream: AsyncIterator[ChatChunk]) -> Collected:

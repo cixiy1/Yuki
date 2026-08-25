@@ -130,25 +130,26 @@ registry = ToolRegistry(
 
 ## 流式调用（自定义渲染）
 
-外部软件需要自己控制渲染时，可以直接消费流：
+推荐用 `turn_stream()`，工具闭环、包还原、记忆写入都在内核内完成：
+
+```text
+async for event in agent.turn_stream("你好"):
+    if event.kind == "content":
+        print(event.text, end="", flush=True)
+```
+
+事件类型：`thinking / content / tool_calls / tool_result / package_restored / done`。
+内核只产生原始事件，不做清洗、去重或渲染；`content` / `thinking` 可能是原始文本
+（含 think 标签），由外壳自己处理。示例外壳的清洗逻辑在 `src/yuki/rendering.py`。
+
+需要最底层的裸流时，也可以直接消费 provider 流：
 
 ```text
 async for chunk in agent.send_message("你好"):
     print(chunk.content, end="", flush=True)
 ```
 
-需要手动跑工具闭环时：
-
-```text
-from yuki_kernel.core.stream import collect_stream
-
-out = await collect_stream(agent.send_message(user_input))
-while out.tool_calls:
-    results = await agent.execute_tool_calls(out.tool_calls)
-    out = await collect_stream(agent.continue_with_tools(out.tool_calls, results))
-```
-
-大多数场景直接用 `agent.turn()` 更简单。
+`agent.turn()` 等价于收集 `turn_stream()` 的全部事件，无头场景直接用。
 
 ## 中间件与事件
 

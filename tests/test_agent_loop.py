@@ -1,17 +1,16 @@
-"""工具闭环契约：单次工具调用。"""
+"""工具闭环契约：turn_stream 事件。"""
 
 import pytest
 
-from yuki.cli import Response
+from yuki_kernel.core.agent import Agent
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills import ToolRegistry
-from yuki_kernel.core.agent import Agent
 
 from tests.fake_provider import FakeProvider, env_tool_call_chunk
 
 
 @pytest.mark.asyncio
-async def test_tool_loop(settings):
+async def test_turn_stream_tool_loop(settings):
     registry = ToolRegistry(None)
     fake = FakeProvider(
         script=[
@@ -22,24 +21,13 @@ async def test_tool_loop(settings):
     )
     agent = Agent("fake", registry, settings, provider=fake)
 
-    out = Response(agent.send_message("看看环境"))
-    events = []
-    while True:
-        event = await out.next_event()
-        if event is None:
-            break
-        events.append(event)
-    assert any(event["type"] == "tool_calls" for event in events)
+    kinds = []
+    content = ""
+    async for event in agent.turn_stream("看看环境"):
+        kinds.append(event.kind)
+        if event.kind == "content":
+            content += event.text
 
-    results = await agent.execute_tool_calls(out.tool_calls)
-    assert "操作系统" in results[0]["content"]
-
-    out = Response(agent.continue_with_tools(out.tool_calls, results))
-    text = ""
-    while True:
-        event = await out.next_event()
-        if event is None:
-            break
-        if event["type"] == "content":
-            text += event["text"]
-    assert "环境信息" in text
+    assert "tool_calls" in kinds
+    assert "tool_result" in kinds
+    assert "环境信息" in content

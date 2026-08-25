@@ -14,7 +14,7 @@ from .events import AgentEvent
 from .memory import MemoryStore
 from .middleware import Middleware, run_after, run_before
 from .session import Session
-from .stream import collect_stream
+from .stream import StreamEvent, TagFilter, clean_content
 from .tools import merge_tool_calls
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
@@ -112,30 +112,63 @@ class Agent:
             yield chunk
 
     async def turn(self, user_message: str) -> TurnResult:
-        """无头完整对话回合：工具循环、包还原、记忆写入都在内核内完成。"""
+        """无头完整对话回合，等价于收集 turn_stream 的事件。"""
+        result = TurnResult()
+        async for event in self.turn_stream(user_message):
+            if event.kind == "thinking":
+                result.thinking += event.text
+            elif event.kind == "content":
+                result.content += event.text
+            elif event.kind == "tool_calls":
+                result.tool_calls.extend(event.calls)
+            elif event.kind == "package_restored":
+                result.changed_packages.append(event.text)
+        result.content, _, _ = clean_content(result.content, "")
+        return result
+
+    async def turn_stream(self, user_message: str) -> AsyncIterator[StreamEvent]:
+        """流式完整对话回合：工具循环、包还原、记忆写入都在内核内完成。"""
         active_packages = self.registry.active_packages
-        collected = await collect_stream(self.send_message(user_message))
-        tool_calls = collected.tool_calls
-        all_calls = list(tool_calls)
+        tag_filter = TagFilter()
+        full_content = ""
+
+        async def consume(stream: AsyncIterator[ChatChunk], calls: list[Any]):
+            nonlocal full_content
+            calls.clear()
+            async for chunk in stream:
+                if chunk.thinking:
+                    yield StreamEvent(kind="thinking", text=chunk.thinking)
+                if chunk.tool_calls:
+                    calls.extend(chunk.tool_calls)
+                    yield StreamEvent(kind="tool_calls", calls=list(chunk.tool_calls))
+                if chunk.content is not None:
+                    full_content += chunk.content
+                    yield StreamEvent(kind="content", text=chunk.content)
+
+        tool_calls: list[Any] = []
+        all_calls: list[Any] = []
+        async for event in consume(self.send_message(user_message), tool_calls):
+            yield event
+        all_calls.extend(tool_calls)
         while tool_calls:
             results = await self.execute_tool_calls(tool_calls)
-            next_collected = await collect_stream(
-                self.continue_with_tools(tool_calls, results)
-            )
-            collected.content += next_collected.content
-            collected.thinking += next_collected.thinking
-            tool_calls = next_collected.tool_calls
+            for result in results:
+                yield StreamEvent(kind="tool_result", text=result["content"])
+            async for event in consume(
+                self.continue_with_tools(tool_calls, results),
+                tool_calls,
+            ):
+                yield event
             all_calls.extend(tool_calls)
+
         changed = await self.restore_packages(active_packages)
-        if collected.content:
-            self.memory.append({"role": "assistant", "content": collected.content})
-            await self.remember(user_message, collected.content)
-        return TurnResult(
-            thinking=collected.thinking,
-            content=collected.content,
-            tool_calls=all_calls,
-            changed_packages=changed,
-        )
+        for package_id in changed:
+            yield StreamEvent(kind="package_restored", text=package_id)
+        memory_content = tag_filter.feed(full_content)
+        if memory_content:
+            self.memory.append({"role": "assistant", "content": memory_content})
+            await self.remember(user_message, memory_content)
+        yield StreamEvent(kind="done")
 
     async def _stream_with_hooks(
         self,

@@ -8,7 +8,6 @@ from typing import cast
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent / "src"))
 
 from yuki_kernel import Agent, Settings, ToolRegistry
-from yuki.cli import output_response, render_response
 
 
 async def main():
@@ -19,8 +18,8 @@ async def main():
         settings,
         provider="api",
     )
-    response = output_response(agent.send_message("你好，请用一句话介绍你自己。"))
-    await render_response(response)
+    result = await agent.turn("你好，请用一句话介绍你自己。")
+    print(result.content)
     await agent.close()
 
 

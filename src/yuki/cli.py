@@ -1,138 +1,55 @@
-"""异步命令行交互循环。"""
+"""Yuki 示例聊天外壳：只做渲染和命令，回合编排交给内核 turn_stream。"""
 
 import asyncio
-from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Optional
+from typing import Any
 
 from yuki_kernel.core.app import App
-from yuki_kernel.core.stream import clean_content, split_sentences
-from yuki_kernel.providers import ChatChunk
+from yuki_kernel.core.stream import TagFilter
 from yuki_kernel.skills.package_manager import LocalDirSource, ZipSource
+
+from .rendering import ContentFilter
 
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
 
-@dataclass
-class Response:
-    """异步流式输出的惰性收集器，渲染时逐块消费并收集。"""
-
-    stream: AsyncIterator[ChatChunk]
-    thinking: str = ""
-    content: str = ""
-    tool_calls: list[Any] = field(default_factory=list)
-    _iterator: AsyncIterator[ChatChunk] = field(init=False, repr=False)
-    _finished: bool = field(default=False, init=False, repr=False)
-    _content_pending: str = field(default="", init=False, repr=False)
-    _content_buffer: str = field(default="", init=False, repr=False)
-    _last_sentence: str = field(default="", init=False, repr=False)
-    _flush_pending: str = field(default="", init=False, repr=False)
-    _content_saw_think_tag: bool = field(default=False, init=False, repr=False)
-
-    def __post_init__(self):
-        self._iterator = self.stream.__aiter__()
-
-    async def next_event(self) -> Optional[dict[str, Any]]:
-        if self._finished:
-            return self._flush_content()
-        try:
-            chunk = await self._iterator.__anext__()
-        except StopAsyncIteration:
-            self._finished = True
-            return self._flush_content()
-
-        event = None
-        if chunk.thinking and chunk.thinking.strip():
-            self.thinking += chunk.thinking
-            event = {"type": "thinking", "text": chunk.thinking.rstrip()}
-        elif chunk.tool_calls:
-            self.tool_calls.extend(chunk.tool_calls)
-            event = {"type": "tool_calls", "calls": list(chunk.tool_calls)}
-        elif chunk.content is not None:
-            clean, pending, saw_tag = clean_content(chunk.content, self._content_pending)
-            self._content_pending = pending
-            if saw_tag:
-                self._content_saw_think_tag = True
-            self._content_buffer += clean
-            event = self._emit_content()
-
-        if chunk.done:
-            self._finished = True
-            if self._content_buffer:
-                self._flush_pending = self._content_buffer
-                self._content_buffer = ""
-            await self._drain()
-        if event is None and not self._finished:
-            return await self.next_event()
-        if event is None:
-            return self._flush_content()
-        return event
-
-    async def _drain(self) -> None:
-        """排空剩余流，避免异步生成器被 GC 关闭时报错。"""
-        try:
-            while True:
-                await self._iterator.__anext__()
-        except StopAsyncIteration:
-            pass
-
-    def _emit_content(self) -> Optional[dict[str, Any]]:
-        sentences = split_sentences(self._content_buffer)
-        self._content_buffer = ""
-        emitted = []
-        for sentence in sentences:
-            key = sentence.strip()
-            if not key:
-                continue
-            if self._content_saw_think_tag and key == self._last_sentence:
-                continue
-            self._last_sentence = key
-            self.content += sentence
-            emitted.append(sentence)
-        if not emitted:
-            return None
-        return {"type": "content", "text": "".join(emitted)}
-
-    def _flush_content(self) -> Optional[dict[str, Any]]:
-        text = self._flush_pending
-        self._flush_pending = ""
-        if not text or (
-            self._content_saw_think_tag and text.strip() == self._last_sentence
-        ):
-            return None
-        self._last_sentence = text.strip()
-        self.content += text
-        return {"type": "content", "text": text}
-
-
-def output_response(stream: AsyncIterator[ChatChunk]) -> Response:
-    return Response(stream)
-
-
-async def render_response(out: Response) -> list[Any]:
+async def render_turn(app: App, line: str) -> None:
     state = "initial"
+    content_filter = ContentFilter()
+    thinking_filter = TagFilter()
 
-    def switch_state(current_state, next_state, label):
-        if current_state != next_state:
-            if current_state != "initial":
+    def switch_state(next_state: str, label: str) -> None:
+        nonlocal state
+        if state != next_state:
+            if state != "initial":
                 print()
             print(label, end="")
-        return next_state
+            state = next_state
 
-    while True:
-        event = await out.next_event()
-        if event is None:
-            break
-        if event["type"] == "thinking":
-            state = switch_state(state, "thinking", "思考：")
-            print(event["text"], end="", flush=True)
-        elif event["type"] == "tool_calls":
-            state = switch_state(state, "tool_calling", "工具调用：")
-            print(event["calls"], end="", flush=True)
-        elif event["type"] == "content":
-            state = switch_state(state, "ans", "回答：")
-            print(event["text"], end="", flush=True)
+    async for event in app.agent.turn_stream(line):
+        if event.kind == "thinking":
+            text = thinking_filter.feed(event.text)
+            if text.strip():
+                switch_state("thinking", "思考：")
+                print(text, end="", flush=True)
+        elif event.kind == "tool_calls":
+            switch_state("tool_calling", "工具调用：")
+            print(event.calls, end="", flush=True)
+        elif event.kind == "content":
+            text = content_filter.feed(event.text)
+            if text:
+                switch_state("ans", "回答：")
+                print(text, end="", flush=True)
+        elif event.kind == "tool_result":
+            print(f"\n工具结果：{event.text}")
+            state = "initial"
+        elif event.kind == "package_restored":
+            print(f"\n外置包已还原：{event.text}")
+            state = "initial"
+    tail = content_filter.finish()
+    if tail:
+        switch_state("ans", "回答：")
+        print(tail, end="", flush=True)
     print()
-    return out.tool_calls
 
 
 async def cli_approver(name: str, _arguments: dict[str, Any]) -> str:
@@ -248,19 +165,4 @@ async def run(app: App) -> None:
         if line.startswith("/"):
             await handle_command(app, line)
             continue
-
-        active_packages = app.agent.registry.active_packages
-        out = output_response(app.agent.send_message(line))
-        tool_calls = await render_response(out)
-        while tool_calls:
-            results = await app.agent.execute_tool_calls(tool_calls)
-            for result in results:
-                print(f"工具结果：{result['content']}")
-            out = output_response(app.agent.continue_with_tools(tool_calls, results))
-            tool_calls = await render_response(out)
-        changed = await app.agent.restore_packages(active_packages)
-        if changed:
-            print(f"外置包已还原：{'、'.join(changed)}")
-        if out.content:
-            await app.agent.remember(line, out.content)
-            app.agent.memory.append({"role": "assistant", "content": out.content})
+        await render_turn(app, line)

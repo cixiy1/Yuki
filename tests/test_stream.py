@@ -1,27 +1,25 @@
-"""流式事件与 think 去重契约。"""
+"""流式清洗与无头收集契约。"""
 
 import pytest
 
-from yuki.cli import output_response
+from yuki.rendering import ContentFilter
+from yuki_kernel.core.stream import collect_stream
 from yuki_kernel.providers import ChatChunk
 
 
+def test_content_filter_dedup():
+    content_filter = ContentFilter()
+    out = content_filter.feed("纽约22°C。</think>纽约22°C。")
+    assert out == "纽约22°C。"
+
+
 @pytest.mark.asyncio
-async def test_stream_events_and_dedup():
+async def test_collect_stream():
     async def stream():
         yield ChatChunk(thinking="思考中")
-        yield ChatChunk(content="纽约气温22°C。</think>纽约气温22°C。")
+        yield ChatChunk(content="你好")
         yield ChatChunk(done=True)
-        yield ChatChunk(content="多余内容")
 
-    out = output_response(stream())
-    events = []
-    while True:
-        event = await out.next_event()
-        if event is None:
-            break
-        events.append(event)
-
-    assert events[0]["type"] == "thinking"
-    assert out.content == "纽约气温22°C。"
-    assert await out.next_event() is None
+    collected = await collect_stream(stream())
+    assert collected.thinking == "思考中"
+    assert collected.content == "你好"
