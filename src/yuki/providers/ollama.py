@@ -32,12 +32,12 @@ def start_ollama_service():
 
     print("未检测到Ollama服务，正在启动...")
     global ollama_proc
-    creationflags = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
+    creation_flags = {"creation_flags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
     ollama_proc = subprocess.Popen(
         ["ollama", "serve"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        **creationflags,
+        **creation_flags,
     )
     time.sleep(2)  # 等待服务初始化
     print("Ollama 服务已启动")
@@ -47,7 +47,7 @@ def start_ollama_service():
 def stop_ollama_service():
     global ollama_proc
     if ollama_proc is None:
-        return
+        return False
     print("正在关闭Ollama服务...")
     # 优雅终止
     ollama_proc.terminate()

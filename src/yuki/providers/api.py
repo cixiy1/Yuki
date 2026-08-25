@@ -37,16 +37,20 @@ class ApiProvider(Provider):
             **kwargs,
         )
         for chunk in stream:
-            choice = chunk.choices[0] if chunk.choices else None
-            if choice is None:
+            chunk = cast(Any, chunk)
+            choices = chunk.choices or []
+            if not choices:
                 continue
-            delta = choice.delta
+            choice = choices[0]
+            delta = getattr(choice, "delta", None)
+            if delta is None:
+                continue
             thinking = getattr(delta, "reasoning_content", None) or getattr(delta, "thinking", None)
             yield ChatChunk(
                 thinking=thinking,
-                content=delta.content,
-                tool_calls=list(delta.tool_calls or []),
-                done=bool(choice.finish_reason),
+                content=getattr(delta, "content", None),
+                tool_calls=list(getattr(delta, "tool_calls", None) or []),
+                done=bool(getattr(choice, "finish_reason", False)),
             )
 
     def close(self, skip_unload: bool = False):

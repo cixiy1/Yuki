@@ -270,7 +270,7 @@ class ToolRegistry:
             return self._execute_python(tool, arguments)
         if entry_type == "command":
             return self._execute_command(tool, arguments)
-        return f"Unknown entry type: {entry_type}"
+        return f"Unknown entry type: {entry_type if entry_type is not None else 'None'}"
 
     def _execute_meta(self, name: str, arguments: dict[str, Any]) -> str:
         if name == "list_packages":

@@ -16,23 +16,23 @@ packages/
 
 ## 最外层字段
 
-| 字段 | 必填 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| `id` | 是 | string | 包的唯一标识，用于日志和冲突判断 |
-| `name` | 否 | string | 包的人类可读名称，默认等于 `id` |
-| `version` | 否 | string | 包版本号 |
-| `description` | 否 | string | 包简介，给人看，不给模型看 |
-| `tools` | 否 | array | 工具列表，纯提示词包可以省略 |
-| `prompts` | 否 | array | 提示词列表，没有提示词的包可以省略 |
+| 字段          | 必填 | 类型   | 说明                               |
+| ------------- | ---- | ------ | ---------------------------------- |
+| `id`          | 是   | string | 包的唯一标识，用于日志和冲突判断   |
+| `name`        | 否   | string | 包的人类可读名称，默认等于 `id`    |
+| `version`     | 否   | string | 包版本号                           |
+| `description` | 否   | string | 包简介，给人看，不给模型看         |
+| `tools`       | 否   | array  | 工具列表，纯提示词包可以省略       |
+| `prompts`     | 否   | array  | 提示词列表，没有提示词的包可以省略 |
 
 ## tools[] 字段
 
-| 字段 | 必填 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| `name` | 是 | string | 工具名，模型调用时使用，包内和跨包都不能重复 |
-| `description` | 是 | string | 工具说明，会发给模型 |
-| `parameters` | 是 | object | 参数结构，JSON Schema |
-| `entry` | 是 | object | 工具执行入口 |
+| 字段          | 必填 | 类型   | 说明                                         |
+| ------------- | ---- | ------ | -------------------------------------------- |
+| `name`        | 是   | string | 工具名，模型调用时使用，包内和跨包都不能重复 |
+| `description` | 是   | string | 工具说明，会发给模型                         |
+| `parameters`  | 是   | object | 参数结构，JSON Schema                        |
+| `entry`       | 是   | object | 工具执行入口                                 |
 
 ## entry 字段
 
@@ -40,12 +40,12 @@ packages/
 
 ### python 入口
 
-| 字段 | 必填 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| `type` | 是 | string | `"python"` |
-| `module` | 是 | string | 包内 Python 文件路径，例如 `tool.py` |
-| `handler` | 是 | string | 模块里的函数名，或类名 |
-| `method` | 否 | string | `handler` 是类时调用的方法名，默认 `run` |
+| 字段      | 必填 | 类型   | 说明                                     |
+| --------- | ---- | ------ | ---------------------------------------- |
+| `type`    | 是   | string | `"python"`                               |
+| `module`  | 是   | string | 包内 Python 文件路径，例如 `tool.py`     |
+| `handler` | 是   | string | 模块里的函数名，或类名                   |
+| `method`  | 否   | string | `handler` 是类时调用的方法名，默认 `run` |
 
 调用时会把模型参数作为关键字参数传入 handler；`handler` 是函数时直接调用，
 是类时会先实例化，再调用 `method` 指定的方法（默认 `run`），返回值转成字符串。
@@ -54,8 +54,11 @@ packages/
 
 ```python
 class Greeter:
+    def __init__(self):
+        self.prefix = "hi"
+
     def run(self, name):
-        return f"hi {name}"
+        return f"{self.prefix} {name}"
 ```
 
 ```json
@@ -71,10 +74,10 @@ class Greeter:
 
 ### command 入口
 
-| 字段 | 必填 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| `type` | 是 | string | `"command"` |
-| `command` | 是 | array[string] | 要执行的命令，例如 `["{python}", "scripts/echo.py"]` |
+| 字段      | 必填 | 类型          | 说明                                                 |
+| --------- | ---- | ------------- | ---------------------------------------------------- |
+| `type`    | 是   | string        | `"command"`                                          |
+| `command` | 是   | array[string] | 要执行的命令，例如 `["{python}", "scripts/echo.py"]` |
 
 `{python}` 会被替换为当前 Python 解释器路径。调用时模型参数以 JSON 写入 stdin，
 程序把结果打印到 stdout，非零退出码视为执行失败。
@@ -83,21 +86,21 @@ class Greeter:
 
 `parameters` 是 JSON Schema，常见字段：
 
-| 字段 | 说明 |
-| --- | --- |
-| `type` | 参数整体类型，函数参数一般用 `"object"` |
-| `required` | 必填参数名数组 |
-| `properties` | 具体参数定义，每个键是一个参数名 |
-| `properties.<name>.type` | 参数类型，如 `"string"`、`"number"`、`"boolean"` |
-| `properties.<name>.description` | 参数说明，帮助模型正确传值 |
+| 字段                            | 说明                                             |
+| ------------------------------- | ------------------------------------------------ |
+| `type`                          | 参数整体类型，函数参数一般用 `"object"`          |
+| `required`                      | 必填参数名数组                                   |
+| `properties`                    | 具体参数定义，每个键是一个参数名                 |
+| `properties.<name>.type`        | 参数类型，如 `"string"`、`"number"`、`"boolean"` |
+| `properties.<name>.description` | 参数说明，帮助模型正确传值                       |
 
 ## prompts[] 字段
 
-| 字段 | 必填 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| `name` | 是 | string | 提示词名，包内不能重复 |
-| `description` | 是 | string | 提示词描述，说明什么时候应该生效 |
-| `path` | 是 | string | 提示词文件路径，相对包目录，例如 `skill.md` |
+| 字段          | 必填 | 类型   | 说明                                        |
+| ------------- | ---- | ------ | ------------------------------------------- |
+| `name`        | 是   | string | 提示词名，包内不能重复                      |
+| `description` | 是   | string | 提示词描述，说明什么时候应该生效            |
+| `path`        | 是   | string | 提示词文件路径，相对包目录，例如 `skill.md` |
 
 提示词内容会被注入系统消息。
 
@@ -217,20 +220,20 @@ class Greeter:
 
 `BUILTIN_TOOLS` 里的工具结构与外置包一致：
 
-| 字段 | 说明 |
-| --- | --- |
-| `name` | 工具名 |
-| `description` | 工具说明 |
-| `parameters` | JSON Schema 参数结构 |
-| `entry` | 执行入口，`type` 为 `python` 或 `command`，格式见上文 |
+| 字段          | 说明                                                  |
+| ------------- | ----------------------------------------------------- |
+| `name`        | 工具名                                                |
+| `description` | 工具说明                                              |
+| `parameters`  | JSON Schema 参数结构                                  |
+| `entry`       | 执行入口，`type` 为 `python` 或 `command`，格式见上文 |
 
 `BUILTIN_PROMPTS` 里的提示词结构：
 
-| 字段 | 说明 |
-| --- | --- |
-| `name` | 提示词名 |
-| `description` | 提示词描述 |
-| `path` | 相对 `src/yuki/skills/` 的 Markdown 文件路径 |
+| 字段          | 说明                                         |
+| ------------- | -------------------------------------------- |
+| `name`        | 提示词名                                     |
+| `description` | 提示词描述                                   |
+| `path`        | 相对 `src/yuki/skills/` 的 Markdown 文件路径 |
 
 内置提示词会被注入系统消息，与外置包的 `prompts` 行为一致。
 
