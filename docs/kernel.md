@@ -42,7 +42,9 @@ asyncio.run(main())
 
 ## 注入人格（后天记忆）
 
-内核本身没有身份。外部软件通过 `system_prompt` 或人格包告诉它“我是谁”：
+内核本身没有身份，也不会自动加载任何人格。使用内核的人负责配置。
+
+方式一：直接给 Agent 传 `system_prompt`：
 
 ```text
 agent = Agent(
@@ -53,8 +55,22 @@ agent = Agent(
 )
 ```
 
-也可以用外置人格包，例如仓库里的 `packages/yuki_persona`，通过
-`AGENT_PACKAGES_PRELOAD=yuki_persona` 预加载。
+方式二：用环境变量预加载人格包：
+
+```text
+AGENT_PACKAGES_PRELOAD=yuki_persona
+```
+
+方式三：在代码里配置预加载：
+
+```text
+settings = Settings.load()
+settings.packages_preload = ["yuki_persona"]
+
+agent = Agent(model, ToolRegistry(settings.packages_dir, preload=settings.packages_preload), settings)
+```
+
+仓库提供示例人格包 `packages/yuki_persona`，是否加载、加载什么人格，完全由外层软件决定。
 
 ## 会话记忆：换记忆
 
@@ -178,6 +194,9 @@ config_reload`。
 ```bash
 PYTHONPATH=src .venv/bin/python -m yuki
 ```
+
+它默认也是空白大脑；要让 Yuki 回答“我是 Yuki”，先配置
+`AGENT_PACKAGES_PRELOAD=yuki_persona`，再启动。
 
 斜杠命令：
 

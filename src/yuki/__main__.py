@@ -10,7 +10,7 @@ from typing import cast
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
 from yuki.cli import cli_approver, run
-from yuki.settings import load_settings
+from yuki_kernel.config import Settings
 from yuki_kernel.core.app import App
 from yuki_kernel.core.session import SessionStore
 from yuki_kernel.skills.package_manager import PackageManager
@@ -35,7 +35,7 @@ async def watch_env(app: App, stop: asyncio.Event):
 
 
 async def main():
-    settings = load_settings()
+    settings = Settings.load()
     store = SessionStore(settings.data_dir)
     package_manager = PackageManager(settings.packages_dir)
     app = App(settings, store, package_manager, approver=cli_approver)
