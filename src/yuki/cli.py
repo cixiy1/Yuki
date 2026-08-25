@@ -80,11 +80,20 @@ class Response:
             if self._content_buffer:
                 self._flush_pending = self._content_buffer
                 self._content_buffer = ""
+            await self._drain()
         if event is None and not self._finished:
             return await self.next_event()
         if event is None:
             return self._flush_content()
         return event
+
+    async def _drain(self) -> None:
+        """排空剩余流，避免异步生成器被 GC 关闭时报错。"""
+        try:
+            while True:
+                await self._iterator.__anext__()
+        except StopAsyncIteration:
+            pass
 
     def _emit_content(self) -> Optional[dict[str, Any]]:
         sentences = split_sentences(self._content_buffer)

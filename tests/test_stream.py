@@ -12,6 +12,7 @@ async def test_stream_events_and_dedup():
         yield ChatChunk(thinking="思考中")
         yield ChatChunk(content="纽约气温22°C。</think>纽约气温22°C。")
         yield ChatChunk(done=True)
+        yield ChatChunk(content="多余内容")
 
     out = output_response(stream())
     events = []
@@ -23,3 +24,4 @@ async def test_stream_events_and_dedup():
 
     assert events[0]["type"] == "thinking"
     assert out.content == "纽约气温22°C。"
+    assert await out.next_event() is None

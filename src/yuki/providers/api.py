@@ -42,21 +42,27 @@ class ApiProvider(Provider):
             stream=True,
             **kwargs,
         )
-        async for chunk in stream:
-            choices = getattr(chunk, "choices", None) or []
-            if not choices:
-                continue
-            choice = choices[0]
-            delta = getattr(choice, "delta", None)
-            if delta is None:
-                continue
-            thinking = getattr(delta, "reasoning_content", None) or getattr(delta, "thinking", None)
-            yield ChatChunk(
-                thinking=thinking,
-                content=getattr(delta, "content", None),
-                tool_calls=list(getattr(delta, "tool_calls", None) or []),
-                done=bool(getattr(choice, "finish_reason", False)),
-            )
+        try:
+            async for chunk in stream:
+                choices = getattr(chunk, "choices", None) or []
+                if not choices:
+                    continue
+                choice = choices[0]
+                delta = getattr(choice, "delta", None)
+                if delta is None:
+                    continue
+                thinking = getattr(delta, "reasoning_content", None) or getattr(delta, "thinking", None)
+                yield ChatChunk(
+                    thinking=thinking,
+                    content=getattr(delta, "content", None),
+                    tool_calls=list(getattr(delta, "tool_calls", None) or []),
+                    done=bool(getattr(choice, "finish_reason", False)),
+                )
+        finally:
+            try:
+                await stream.close()
+            except Exception:
+                pass
 
     async def close(self, skip_unload: bool = False):
         await self.client.close()
