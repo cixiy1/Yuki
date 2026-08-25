@@ -55,8 +55,8 @@ class App:
             memory_store=self.memory_store,
         )
 
-    async def reload(self) -> None:
-        self.settings = Settings.load()
+    async def reload(self, settings: Optional[Settings] = None) -> None:
+        self.settings = settings or Settings()
         self.memory_store = (
             MemoryStore(self.settings.data_dir, namespace=self.settings.namespace)
             if self.settings.data_dir is not None

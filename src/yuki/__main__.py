@@ -11,12 +11,11 @@ sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
 from yuki.approver import cli_approver
 from yuki.cli import run
-from yuki_kernel.config import Settings
 from yuki_kernel.core.app import App
 from yuki_kernel.core.session import SessionStore
 from yuki_kernel.skills.package_manager import PackageManager
 
-EXAMPLE_ROOT = Path(__file__).resolve().parent.parent.parent
+from yuki.settings import EXAMPLE_ROOT, load_settings
 
 
 def _env_mtime(project_root: Path):
@@ -38,13 +37,11 @@ async def watch_env(app: App, stop: asyncio.Event):
 
 
 async def main():
-    settings = Settings.load()
-    packages_dir = settings.packages_dir or EXAMPLE_ROOT / "packages"
-    data_dir = settings.data_dir or EXAMPLE_ROOT / "data"
-    settings.packages_dir = packages_dir
-    settings.data_dir = data_dir
-    store = SessionStore(data_dir)
-    package_manager = PackageManager(packages_dir)
+    settings = load_settings()
+    assert settings.data_dir is not None
+    assert settings.packages_dir is not None
+    store = SessionStore(settings.data_dir)
+    package_manager = PackageManager(settings.packages_dir)
     app = App(settings, store, package_manager, approver=cli_approver)
     stop = asyncio.Event()
     watcher = asyncio.create_task(watch_env(app, stop))

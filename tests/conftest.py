@@ -13,14 +13,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 @pytest.fixture
 def settings(tmp_path):
-    settings = Settings.load()
-    settings.data_dir = tmp_path / "data"
-    settings.packages_dir = tmp_path / "packages"
-    settings.retry_max = 2
-    settings.retry_base = 0.01
-    settings.max_context_tokens = 100000
-    settings.keep_recent_messages = 2
-    return settings
+    return Settings(
+        provider="ollama",
+        model="fake",
+        data_dir=tmp_path / "data",
+        packages_dir=tmp_path / "packages",
+        retry_max=2,
+        retry_base=0.01,
+        max_context_tokens=100000,
+        keep_recent_messages=2,
+    )
 
 
 @pytest.fixture

@@ -7,11 +7,12 @@ from typing import cast
 
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent / "src"))
 
-from yuki_kernel import Agent, Settings, ToolRegistry
+from yuki.settings import load_settings
+from yuki_kernel import Agent, ToolRegistry
 
 
 async def main():
-    settings = Settings.load()
+    settings = load_settings()
     agent = Agent(
         settings.model,
         ToolRegistry(),

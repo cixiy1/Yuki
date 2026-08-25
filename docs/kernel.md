@@ -28,7 +28,7 @@ async def main():
     agent = Agent(
         "qwen3:8b",
         ToolRegistry(),
-        Settings.load(),
+        Settings(provider="ollama", model="qwen3:8b"),
     )
     result = await agent.turn("你好")
     print(result.content)
@@ -64,7 +64,7 @@ AGENT_PACKAGES_PRELOAD=yuki_persona
 方式三：在代码里配置预加载：
 
 ```text
-settings = Settings.load()
+settings = Settings(provider="ollama", model="qwen3:8b")
 settings.packages_preload = ["yuki_persona"]
 
 agent = Agent(model, ToolRegistry(settings.packages_dir, preload=settings.packages_preload), settings)
@@ -175,20 +175,32 @@ config_reload`。
 
 ## 配置
 
-常用环境变量：
+内核不读取环境变量，也不依赖 `.env` 或项目目录。`Settings` 是完全由外部软件构造的参数对象：
 
-- `AGENT_PROVIDER`：`ollama` 或 `api`
-- `AGENT_MODEL`：模型名
-- `AGENT_THINK`：是否开启思考
-- `OPENAI_API_KEY` / `OPENAI_BASE_URL`：API provider
-- `PACKAGES_DIR` / `AGENT_PACKAGES` / `AGENT_PACKAGES_PRELOAD`（目录由外部软件配置，内核不假设）
-- `AGENT_MAX_CONTEXT_TOKENS` / `AGENT_KEEP_RECENT_MESSAGES`
-- `AGENT_MEMORY_LIMIT` / `AGENT_NAMESPACE`
-- `AGENT_RETRY_MAX` / `AGENT_RETRY_BASE`
-- `DATA_DIR`（会话和长期记忆目录由外部软件配置）
+```text
+settings = Settings(
+    provider="api",
+    model="glm-4.5-air",
+    packages_dir=Path("/your/project/packages"),
+    data_dir=Path("/your/project/data"),
+    retry_max=3,
+)
+```
 
-`PACKAGES_DIR`、`DATA_DIR` 未设置时内核不加载外置包、不启用持久化记忆；
-具体目录由外层软件决定。示例 Yuki 在自己的入口里默认使用仓库下的 `packages/` 和 `data/`。
+字段说明：
+
+- `provider` / `model`：模型提供方和模型名
+- `think`：是否开启思考
+- `openai_base_url` / `openai_api_key`：API provider
+- `ollama_host` / `ollama_port`：Ollama 地址
+- `packages_dir` / `packages` / `packages_preload`：外置包目录与加载策略
+- `max_context_tokens` / `keep_recent_messages`：上下文预算
+- `memory_limit` / `namespace`：长期记忆
+- `retry_max` / `retry_base`：重试
+- `data_dir`：会话与长期记忆目录
+
+`packages_dir`、`data_dir` 传 `None` 时内核不加载外置包、不启用持久化记忆。
+Yuki 示例自己的 `load_settings()` 负责读环境变量并填充这些字段，那属于外壳层。
 
 完整说明见 [.env.example](../.env.example)。
 

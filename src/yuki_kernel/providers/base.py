@@ -20,7 +20,7 @@ class ChatChunk:
 class Provider(ABC):
     def __init__(self, model: str, settings: Optional[Settings] = None):
         self.model = model
-        self.settings = settings or Settings.load()
+        self.settings = settings or Settings()
 
     @abstractmethod
     def chat(

@@ -5,6 +5,8 @@ import asyncio
 from yuki_kernel.core.app import App
 from yuki_kernel.skills.package_manager import LocalDirSource, ZipSource
 
+from .settings import load_settings
+
 
 async def handle_pkg(app: App, arg: str) -> None:
     parts = arg.split(maxsplit=1)
@@ -91,7 +93,7 @@ async def handle_command(app: App, line: str) -> bool:
         app.agent.switch_session(app.store.create())
         print("已开始新会话")
     elif cmd == "/reload":
-        await app.reload()
+        await app.reload(load_settings())
         print("配置已热加载")
     elif cmd == "/pkg":
         await handle_pkg(app, arg)
