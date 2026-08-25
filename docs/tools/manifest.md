@@ -33,6 +33,7 @@ packages/
 | `description` | 是   | string | 工具说明，会发给模型                         |
 | `parameters`  | 是   | object | 参数结构，JSON Schema                        |
 | `entry`       | 是   | object | 工具执行入口                                 |
+| `requires_approval` | 否 | bool | 为 `true` 时执行前需要用户审批               |
 
 ## entry 字段
 
@@ -81,6 +82,9 @@ class Greeter:
 
 `{python}` 会被替换为当前 Python 解释器路径。调用时模型参数以 JSON 写入 stdin，
 程序把结果打印到 stdout，非零退出码视为执行失败。
+
+`command` 入口的工具默认需要审批；`python` 工具只有在 `requires_approval: true`
+时才需要审批。
 
 ## parameters 字段
 

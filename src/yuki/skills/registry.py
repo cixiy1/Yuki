@@ -76,7 +76,10 @@ def _require_entry(tool: Tool) -> ToolEntry:
 def _run_handler(handler: Any, arguments: dict[str, Any]) -> str:
     if not callable(handler):
         return "handler 不可调用"
-    result = cast(Callable[..., str], handler)(**arguments)
+    try:
+        result = cast(Callable[..., str], handler)(**arguments)
+    except Exception as err:
+        return f"工具执行失败：{err}"
     return f"{result}"
 
 
@@ -242,6 +245,13 @@ class ToolRegistry:
             raise ValueError(f"提示词名冲突：{name}")
         self._prompts[name] = prompt
 
+    def needs_approval(self, name: str) -> bool:
+        tool = self._tools.get(name)
+        if tool is None:
+            return False
+        entry = tool.get("entry") or {}
+        return entry.get("type") == "command" or bool(tool.get("requires_approval"))
+
     def system_prompt(self) -> str:
         """生成系统消息：内置/外置提示词在前，按需加载指引在后。"""
         parts = []
@@ -320,7 +330,10 @@ class ToolRegistry:
             instance_key = f"{module_name}.{entry['handler']}"
             instance = self._instances.get(instance_key)
             if instance is None:
-                instance = handler()
+                try:
+                    instance = handler()
+                except Exception as err:
+                    return f"工具执行失败：{err}"
                 self._instances[instance_key] = instance
             method = entry.get("method", "run")
             return _run_handler(getattr(instance, method, None), arguments)
@@ -347,6 +360,8 @@ class ToolRegistry:
             )
         except subprocess.TimeoutExpired:
             return "工具执行超时"
+        except Exception as err:
+            return f"工具执行失败：{err}"
         if result.returncode != 0:
             return f"工具执行失败：{result.stderr.strip() or result.stdout.strip()}"
         return result.stdout.strip()

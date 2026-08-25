@@ -18,3 +18,4 @@ class Tool(TypedDict, total=False):
     entry: ToolEntry
     package: str
     package_dir: str
+    requires_approval: bool

@@ -1,11 +1,13 @@
-"""命令行交互循环。"""
+"""异步命令行交互循环。"""
 
+import asyncio
 import re
 from dataclasses import dataclass, field
-from typing import Any, Iterator, Optional
+from typing import Any, AsyncIterator, Optional
 
-from .core.agent import Agent
+from .core.app import App
 from .providers import ChatChunk
+from .skills.package_manager import LocalDirSource, ZipSource
 
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
@@ -32,13 +34,13 @@ def split_sentences(text: str) -> list[str]:
 
 @dataclass
 class Response:
-    """流式输出的惰性收集器，渲染时逐块消费并收集。"""
+    """异步流式输出的惰性收集器，渲染时逐块消费并收集。"""
 
-    stream: Iterator[ChatChunk]
+    stream: AsyncIterator[ChatChunk]
     thinking: str = ""
     content: str = ""
     tool_calls: list[Any] = field(default_factory=list)
-    _iterator: Iterator[ChatChunk] = field(init=False, repr=False)
+    _iterator: AsyncIterator[ChatChunk] = field(init=False, repr=False)
     _finished: bool = field(default=False, init=False, repr=False)
     _content_pending: str = field(default="", init=False, repr=False)
     _content_buffer: str = field(default="", init=False, repr=False)
@@ -47,14 +49,14 @@ class Response:
     _content_saw_think_tag: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self):
-        self._iterator = iter(self.stream)
+        self._iterator = self.stream.__aiter__()
 
-    def next_event(self) -> Optional[dict[str, Any]]:
+    async def next_event(self) -> Optional[dict[str, Any]]:
         if self._finished:
             return self._flush_content()
         try:
-            chunk = next(self._iterator)
-        except StopIteration:
+            chunk = await self._iterator.__anext__()
+        except StopAsyncIteration:
             self._finished = True
             return self._flush_content()
 
@@ -79,7 +81,7 @@ class Response:
                 self._flush_pending = self._content_buffer
                 self._content_buffer = ""
         if event is None and not self._finished:
-            return self.next_event()
+            return await self.next_event()
         if event is None:
             return self._flush_content()
         return event
@@ -113,26 +115,22 @@ class Response:
         return {"type": "content", "text": text}
 
 
-def output_response(stream: Iterator[ChatChunk]) -> Response:
-    """拿输出：把模型流包装成边收集边渲染的 Response。"""
-
+def output_response(stream: AsyncIterator[ChatChunk]) -> Response:
     return Response(stream)
 
 
-def render_response(out: Response) -> list[Any]:
-    """渲染：通过 out 逐块取输出，边取边打印，返回工具调用。"""
-
-    state = "initial"  # initial | thinking | tool_calling | ans
+async def render_response(out: Response) -> list[Any]:
+    state = "initial"
 
     def switch_state(current_state, next_state, label):
         if current_state != next_state:
             if current_state != "initial":
-                print()  # 段落间换行
+                print()
             print(label, end="")
         return next_state
 
     while True:
-        event = out.next_event()
+        event = await out.next_event()
         if event is None:
             break
         if event["type"] == "thinking":
@@ -148,24 +146,126 @@ def render_response(out: Response) -> list[Any]:
     return out.tool_calls
 
 
-def run(agent: Agent) -> None:
+async def cli_approver(name: str, arguments: dict[str, Any]) -> str:
+    answer = await asyncio.to_thread(
+        input,
+        f"工具 {name} 需要审批 (y / ya / y <分钟> / n)：",
+    )
+    return answer.strip()
+
+
+async def handle_pkg(app: App, arg: str) -> None:
+    parts = arg.split(maxsplit=1)
+    sub = parts[0] if parts else ""
+    ref = parts[1].strip() if len(parts) > 1 else ""
+
+    if sub == "install":
+        if not ref:
+            print("用法：/pkg install <目录|zip>")
+            return
+        source = ZipSource() if ref.lower().endswith(".zip") else LocalDirSource()
+        try:
+            info = await app.package_manager.install(source, ref)
+            print(f"已安装：{info.id} {info.version}")
+            app.registry.scan_packages(
+                app.settings.packages_dir,
+                available=app.settings.packages or None,
+            )
+        except Exception as err:
+            print(f"安装失败：{err}")
+    elif sub == "remove":
+        if not ref:
+            print("用法：/pkg remove <id>")
+            return
+        try:
+            app.package_manager.remove(ref)
+            print(f"已卸载：{ref}")
+            app.registry.scan_packages(
+                app.settings.packages_dir,
+                available=app.settings.packages or None,
+            )
+        except Exception as err:
+            print(f"卸载失败：{err}")
+    elif sub == "list":
+        infos = app.package_manager.list()
+        if not infos:
+            print("暂无已安装包")
+            return
+        for info in infos:
+            print(f"{info.id} {info.version} {info.source}")
+    else:
+        print("用法：/pkg install <目录|zip> | /pkg remove <id> | /pkg list")
+
+
+async def handle_command(app: App, line: str) -> bool:
+    parts = line.split(maxsplit=1)
+    cmd = parts[0].lower()
+    arg = parts[1].strip() if len(parts) > 1 else ""
+
+    if cmd == "/save":
+        if not arg:
+            print("用法：/save <名字>")
+            return True
+        app.session.name = arg
+        await asyncio.to_thread(app.store.save, app.session)
+        print(f"会话已保存：{arg}")
+    elif cmd == "/load":
+        if not arg:
+            print("用法：/load <名字>")
+            return True
+        meta = next((item for item in app.store.list() if item.name == arg), None)
+        if meta is None:
+            print(f"找不到会话：{arg}")
+            return True
+        session = await asyncio.to_thread(app.store.load, meta.session_id)
+        if session is None:
+            print(f"会话文件缺失：{arg}")
+            return True
+        app.agent.switch_session(session)
+        print(f"已加载会话：{arg}")
+    elif cmd == "/sessions":
+        metas = app.store.list()
+        if not metas:
+            print("暂无已保存会话")
+            return True
+        for meta in metas:
+            print(f"{meta.name}  {meta.updated_at}")
+    elif cmd == "/new":
+        app.agent.switch_session(app.store.create())
+        print("已开始新会话")
+    elif cmd == "/reload":
+        await app.reload()
+        print("配置已热加载")
+    elif cmd == "/pkg":
+        await handle_pkg(app, arg)
+    else:
+        print(f"未知命令：{cmd}")
+    return True
+
+
+async def run(app: App) -> None:
     while True:
-        user_input = input("user：").strip()
-        if not user_input:
+        raw = await asyncio.to_thread(input, "user：")
+        line = raw.strip()
+        if not line:
             continue
-        if user_input.lower() in EXIT_COMMANDS:
+        if line.lower() in EXIT_COMMANDS:
             break
-        active_packages = agent.registry.active_packages
-        out = output_response(agent.send_message(user_input))
-        tool_calls = render_response(out)
+        if line.startswith("/"):
+            await handle_command(app, line)
+            continue
+
+        active_packages = app.agent.registry.active_packages
+        out = output_response(app.agent.send_message(line))
+        tool_calls = await render_response(out)
         while tool_calls:
-            results = agent.execute_tool_calls(tool_calls)
+            results = await app.agent.execute_tool_calls(tool_calls)
             for result in results:
                 print(f"工具结果：{result['content']}")
-            out = output_response(agent.continue_with_tools(tool_calls, results))
-            tool_calls = render_response(out)
-        changed = agent.restore_packages(active_packages)
+            out = output_response(app.agent.continue_with_tools(tool_calls, results))
+            tool_calls = await render_response(out)
+        changed = await app.agent.restore_packages(active_packages)
         if changed:
             print(f"外置包已还原：{'、'.join(changed)}")
         if out.content:
-            agent.memory.append({"role": "assistant", "content": out.content})
+            app.agent.memory.append({"role": "assistant", "content": out.content})

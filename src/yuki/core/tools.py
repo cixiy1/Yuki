@@ -1,9 +1,7 @@
-"""解析并执行模型输出的工具调用。"""
+"""解析模型输出的工具调用。"""
 
 import json
 from typing import Any
-
-from ..skills import ToolRegistry
 
 
 def parse_tool_call(call: Any) -> tuple[str, Any]:
@@ -50,11 +48,3 @@ def merge_tool_calls(tool_calls: list[Any]) -> list[dict[str, Any]]:
             call["id"] = entry["id"]
         calls.append(call)
     return calls
-
-
-def execute_tool_calls(registry: ToolRegistry, tool_calls: list[Any]) -> list[dict[str, Any]]:
-    results = []
-    for call in merge_tool_calls(tool_calls):
-        content = registry.execute(call["name"], call["arguments"])
-        results.append({"role": "tool", "name": call["name"], "content": content})
-    return results

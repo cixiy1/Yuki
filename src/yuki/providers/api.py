@@ -1,44 +1,49 @@
-import json
-from typing import Any, Iterator, Mapping, Optional, Sequence, cast
+"""OpenAI 兼容 API 的异步 provider。"""
 
-from ..config import AGENT_THINK, OPENAI_API_KEY, OPENAI_BASE_URL
+import json
+from typing import Any, AsyncIterator, Mapping, Optional, Sequence
+
+from ..config import Settings
 from .base import ChatChunk, Provider
 
 
 class ApiProvider(Provider):
-    """OpenAI 兼容 API 的 provider，密钥和地址可通过环境变量提供"""
-
-    def __init__(self, model: str, api_key: Optional[str] = None, base_url: Optional[str] = None):
-        super().__init__(model)
+    def __init__(
+        self,
+        model: str,
+        settings: Optional[Settings] = None,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ):
+        super().__init__(model, settings)
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
         except ImportError as err:
             raise ImportError("ApiProvider 需要安装 openai，请先执行 pip install openai") from err
-        self.client = OpenAI(
-            api_key=api_key or OPENAI_API_KEY,
-            base_url=base_url or OPENAI_BASE_URL,
+        self.client = AsyncOpenAI(
+            api_key=api_key or self.settings.openai_api_key,
+            base_url=base_url or self.settings.openai_base_url,
         )
 
-    def chat(
+    async def chat(
         self,
         messages: Sequence[Mapping[str, Any]],
         tools: Optional[Sequence[Mapping[str, Any]]] = None,
         **kwargs,
-    ) -> Iterator[ChatChunk]:
+    ) -> AsyncIterator[ChatChunk]:
         kwargs.pop("stream", None)
-        if AGENT_THINK:
+        if self.settings.think:
             extra_body = kwargs.setdefault("extra_body", {})
             extra_body.setdefault("thinking", {"type": "enabled"})
-        stream = self.client.chat.completions.create(
+        stream = await self.client.chat.completions.create(
             model=self.model,
-            messages=cast(Any, messages),
-            tools=cast(Any, tools),
+            messages=messages,
+            tools=tools,
             stream=True,
             **kwargs,
         )
-        for chunk in stream:
-            chunk = cast(Any, chunk)
-            choices = chunk.choices or []
+        async for chunk in stream:
+            choices = getattr(chunk, "choices", None) or []
             if not choices:
                 continue
             choice = choices[0]
@@ -53,8 +58,8 @@ class ApiProvider(Provider):
                 done=bool(getattr(choice, "finish_reason", False)),
             )
 
-    def close(self, skip_unload: bool = False):
-        self.client.close()
+    async def close(self, skip_unload: bool = False):
+        await self.client.close()
 
     def build_tool_messages(
         self,

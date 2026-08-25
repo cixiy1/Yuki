@@ -38,6 +38,11 @@ packages/
 | `PACKAGES_DIR`           | `packages` | 外置工具包所在目录；相对路径按项目根目录解析，也可写绝对路径 |
 | `AGENT_PACKAGES`         | 空         | 可用外置包白名单，逗号分隔；留空表示目录下全部可用           |
 | `AGENT_PACKAGES_PRELOAD` | 空         | 启动即加载的外置包，逗号分隔；留空表示由模型按需加载         |
+| `AGENT_MAX_CONTEXT_TOKENS` | `12000`  | 上下文预算，超限时压缩旧消息                                 |
+| `AGENT_KEEP_RECENT_MESSAGES` | `10`   | 摘要时保留的最近消息条数                                     |
+| `AGENT_RETRY_MAX`        | `3`        | provider 瞬时错误最大重试次数                                |
+| `AGENT_RETRY_BASE`       | `0.5`      | 重试退避基数（秒）                                           |
+| `DATA_DIR`               | `data`     | 会话 JSONL 与 SQLite 索引目录                                |
 
 ## 提示词如何生效
 
@@ -68,5 +73,14 @@ packages/
 ## 安全
 
 外置包可能执行任意 Python 代码或系统命令。加载前请检查包内容，只保留你信任的包。
+`command` 入口工具和 manifest 声明 `requires_approval: true` 的工具，执行前需要审批：
+`y` 只批一次，`ya` 会话内记住，`y <分钟>` 记住指定时长，`n` 拒绝。
+
+## 会话与包管理命令
+
+- `/save <名字>`：把当前会话写入 `data/sessions/`，索引进 SQLite。
+- `/load <名字>` / `/sessions` / `/new`：恢复/列出/新建会话。
+- `/reload`：重新加载 `.env` 配置（也会自动监听变化）。
+- `/pkg install <目录|zip>` / `/pkg remove <id>` / `/pkg list`：本地包管理。
 
 字段格式完整参考见 [manifest.md](manifest.md)。

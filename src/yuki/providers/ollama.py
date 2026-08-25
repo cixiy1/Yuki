@@ -1,35 +1,31 @@
+"""Ollama 本地服务的异步 provider。"""
+
 import socket
 import subprocess
 import sys
 import time
-from typing import Any, Iterator, Mapping, Optional, Sequence
+from typing import Any, AsyncIterator, Mapping, Optional, Sequence
 
 import ollama
 
-from ..config import AGENT_THINK, OLLAMA_HOST, OLLAMA_PORT
+from ..config import Settings
 from .base import ChatChunk, Provider
 
 ollama_proc: Optional[subprocess.Popen] = None
 
 
-def is_ollama_running(host=OLLAMA_HOST, port=OLLAMA_PORT, timeout: float = 1) -> bool:
-    """检测Ollama服务是否正在运行"""
+def is_ollama_running(host: str, port: int, timeout: float = 1) -> bool:
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
-        sock.connect((host, port))
-        sock.close()
-        return True
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
     except (ConnectionRefusedError, socket.timeout, OSError):
         return False
 
 
-def start_ollama_service():
-    """后台唤醒启动 ollama serve"""
-    if is_ollama_running():
+def start_ollama_service(host: str = "127.0.0.1", port: int = 11434) -> bool:
+    if is_ollama_running(host, port):
         print("Ollama 服务已运行，无需启动")
         return True
-
     print("未检测到Ollama服务，正在启动...")
     global ollama_proc
     creation_flags = {"creation_flags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
@@ -39,22 +35,20 @@ def start_ollama_service():
         stderr=subprocess.DEVNULL,
         **creation_flags,
     )
-    time.sleep(2)  # 等待服务初始化
+    time.sleep(2)
     print("Ollama 服务已启动")
     return True
 
 
-def stop_ollama_service():
+def stop_ollama_service() -> bool:
     global ollama_proc
     if ollama_proc is None:
         return False
     print("正在关闭Ollama服务...")
-    # 优雅终止
     ollama_proc.terminate()
     try:
         ollama_proc.wait(timeout=6)
     except subprocess.TimeoutExpired:
-        # 超时强制杀死
         ollama_proc.kill()
         ollama_proc.wait()
     ollama_proc = None
@@ -63,24 +57,27 @@ def stop_ollama_service():
 
 
 class OllamaProvider(Provider):
-    def start(self) -> bool:
-        return start_ollama_service()
+    async def start(self) -> bool:
+        return start_ollama_service(self.settings.ollama_host, self.settings.ollama_port)
 
-    def chat(
+    async def chat(
         self,
         messages: Sequence[Mapping[str, Any]],
         tools: Optional[Sequence[Mapping[str, Any]]] = None,
         **kwargs,
-    ) -> Iterator[ChatChunk]:
-        kwargs.setdefault("think", AGENT_THINK)
-        stream = ollama.chat(
+    ) -> AsyncIterator[ChatChunk]:
+        kwargs.setdefault("think", self.settings.think)
+        client = ollama.AsyncClient(
+            host=f"http://{self.settings.ollama_host}:{self.settings.ollama_port}"
+        )
+        stream = await client.chat(
             model=self.model,
             messages=messages,
             tools=tools,
             stream=True,
             **kwargs,
         )
-        for chunk in stream:
+        async for chunk in stream:
             msg = chunk.message
             yield ChatChunk(
                 thinking=msg.thinking,
@@ -89,14 +86,17 @@ class OllamaProvider(Provider):
                 done=chunk.done,
             )
 
-    def close(self, skip_unload: bool = False):
+    async def close(self, skip_unload: bool = False):
         if not skip_unload:
             try:
-                ollama.generate(model=self.model, prompt="", keep_alive="0s")
+                client = ollama.AsyncClient(
+                    host=f"http://{self.settings.ollama_host}:{self.settings.ollama_port}"
+                )
+                await client.generate(model=self.model, prompt="", keep_alive="0s")
                 print("模型已回收")
             except Exception as err:
                 print("模型回收失败：", err)
-        return stop_ollama_service()
+        stop_ollama_service()
 
     def build_tool_messages(
         self,
