@@ -32,6 +32,7 @@ async def test_session_commands(settings, store, tmp_path):
     await handle_command(app, "/load 测试会话")
     assert app.agent.session.name == "测试会话"
     assert app.agent.memory[-1] == {"role": "user", "content": "你好"}
+    assert app.session is app.agent.session
 
     await handle_command(app, "/sessions")
     assert [meta.name for meta in store.list_sessions()] == ["测试会话"]

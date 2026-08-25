@@ -234,6 +234,7 @@ async def handle_command(app: App, line: str) -> bool:
         if session is None:
             print(f"会话文件缺失：{arg}")
             return True
+        app.session = session
         app.agent.switch_session(session)
         print(f"已加载会话：{arg}")
     elif cmd == "/sessions":
