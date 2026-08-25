@@ -49,7 +49,11 @@ class App:
             memory_store=self.memory_store,
         )
 
-    async def reload(self) -> None:
-        self.settings = Settings.load()
+    async def reload(self, settings: Optional[Settings] = None) -> None:
+        self.settings = settings or Settings.load()
+        self.memory_store = MemoryStore(
+            self.settings.data_dir,
+            namespace=self.settings.namespace,
+        )
         self.registry = self._build_registry()
         self.agent = self._build_agent()

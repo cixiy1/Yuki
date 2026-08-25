@@ -9,6 +9,8 @@ from yuki_kernel.core.stream import clean_content, split_sentences
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills.package_manager import LocalDirSource, ZipSource
 
+from .settings import load_settings
+
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
 
@@ -228,7 +230,7 @@ async def handle_command(app: App, line: str) -> bool:
         app.agent.switch_session(app.store.create())
         print("已开始新会话")
     elif cmd == "/reload":
-        await app.reload()
+        await app.reload(load_settings())
         print("配置已热加载")
     elif cmd == "/pkg":
         await handle_pkg(app, arg)
