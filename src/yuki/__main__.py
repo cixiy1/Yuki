@@ -1,6 +1,7 @@
 """Yuki 入口。"""
 
 import asyncio
+import os
 import sys
 from pathlib import Path
 from typing import cast
@@ -49,6 +50,10 @@ async def main():
         stop.set()
         watcher.cancel()
         try:
+            await watcher
+        except asyncio.CancelledError:
+            pass
+        try:
             await app.agent.close()
             print("\n程序结束，资源清理完成")
         except Exception as err:
@@ -59,3 +64,7 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+    else:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(0)

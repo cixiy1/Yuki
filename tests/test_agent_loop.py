@@ -22,20 +22,20 @@ async def test_tool_loop(settings):
                             "index": 0,
                             "id": "call_1",
                             "function": {
-                                "name": "get_name",
-                                "arguments": '{"name": "张三"}',
+                                "name": "get_environment_info",
+                                "arguments": "{}",
                             },
                         }
                     ]
                 )
             ],
-            [ChatChunk(content="张三的家庭在纽约。"), ChatChunk(done=True)],
+            [ChatChunk(content="环境信息已返回。"), ChatChunk(done=True)],
         ],
         settings=settings,
     )
     agent = Agent("fake", registry, settings, provider=fake)
 
-    out = Response(agent.send_message("张三家"))
+    out = Response(agent.send_message("看看环境"))
     events = []
     while True:
         event = await out.next_event()
@@ -45,7 +45,7 @@ async def test_tool_loop(settings):
     assert any(event["type"] == "tool_calls" for event in events)
 
     results = await agent.execute_tool_calls(out.tool_calls)
-    assert results[0]["content"] == "纽约"
+    assert "操作系统" in results[0]["content"]
 
     out = Response(agent.continue_with_tools(out.tool_calls, results))
     text = ""
@@ -55,4 +55,4 @@ async def test_tool_loop(settings):
             break
         if event["type"] == "content":
             text += event["text"]
-    assert "纽约" in text
+    assert "环境信息" in text
