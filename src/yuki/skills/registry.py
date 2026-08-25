@@ -18,6 +18,7 @@ class ToolEntry(TypedDict, total=False):
     type: str
     module: str
     handler: str
+    method: str
     command: list[str]
 
 
@@ -113,6 +114,7 @@ class ToolRegistry:
         self._packages: dict[str, dict[str, Any]] = {}
         self._active_packages: set[str] = set()
         self._modules: dict[str, ModuleType] = {}
+        self._instances: dict[str, Any] = {}
         self.load_builtin()
         if packages_dir is not None:
             self.scan_packages(Path(packages_dir), available=available)
@@ -325,6 +327,14 @@ class ToolRegistry:
             self._modules[module_name] = loaded
 
         handler = getattr(loaded, entry["handler"])
+        if isinstance(handler, type):
+            instance_key = f"{module_name}.{entry['handler']}"
+            instance = self._instances.get(instance_key)
+            if instance is None:
+                instance = handler()
+                self._instances[instance_key] = instance
+            method = entry.get("method", "run")
+            return _run_handler(getattr(instance, method, None), arguments)
         return _run_handler(handler, arguments)
 
     @staticmethod

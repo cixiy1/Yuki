@@ -44,9 +44,30 @@ packages/
 | --- | --- | --- | --- |
 | `type` | 是 | string | `"python"` |
 | `module` | 是 | string | 包内 Python 文件路径，例如 `tool.py` |
-| `handler` | 是 | string | 模块里的函数名 |
+| `handler` | 是 | string | 模块里的函数名，或类名 |
+| `method` | 否 | string | `handler` 是类时调用的方法名，默认 `run` |
 
-调用时会把模型参数作为关键字参数传入 handler，handler 的返回值转成字符串作为工具结果。
+调用时会把模型参数作为关键字参数传入 handler；`handler` 是函数时直接调用，
+是类时会先实例化，再调用 `method` 指定的方法（默认 `run`），返回值转成字符串。
+
+类入口示例：
+
+```python
+class Greeter:
+    def run(self, name):
+        return f"hi {name}"
+```
+
+```json
+{
+  "entry": {
+    "type": "python",
+    "module": "tool.py",
+    "handler": "Greeter",
+    "method": "run"
+  }
+}
+```
 
 ### command 入口
 
