@@ -5,7 +5,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Optional, Union
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .external import discover_packages, load_package
@@ -235,13 +235,9 @@ class ToolRegistry:
         tool = self._tools.get(name)
         if tool is None:
             return f"Unknown tool: {name}"
-        if "entry" not in tool:
-            handler = tool.get("handler")
-            if not isinstance(handler, Callable):
-                return f"工具 {name} 缺少可调用的 handler"
-            return str(handler(**arguments))
-
-        entry = tool["entry"]
+        entry = tool.get("entry")
+        if entry is None:
+            return f"工具 {name} 缺少执行入口"
         if entry["type"] == "python":
             return self._execute_python(tool, arguments)
         if entry["type"] == "command":
@@ -287,8 +283,9 @@ class ToolRegistry:
             loader.exec_module(module)
             self._modules[module_name] = module
 
-        handler = getattr(module, entry["handler"], None)
-        if not isinstance(handler, Callable):
+        try:
+            handler = getattr(module, entry["handler"])
+        except AttributeError:
             return f"模块 {module_path} 中找不到函数：{entry['handler']}"
         return str(handler(**arguments))
 
