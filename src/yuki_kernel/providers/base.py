@@ -18,9 +18,9 @@ class ChatChunk:
 
 
 class Provider(ABC):
-    def __init__(self, model: str, settings: Optional[Settings] = None):
+    def __init__(self, model: str, settings: Settings):
         self.model = model
-        self.settings = settings or Settings()
+        self.settings = settings
 
     @abstractmethod
     def chat(

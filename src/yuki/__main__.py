@@ -32,7 +32,7 @@ async def watch_env(app: App, stop: asyncio.Event):
         current = _env_mtime(EXAMPLE_ROOT)
         if current is not None and current != last:
             last = current
-            await app.reload()
+            await app.reload(load_settings())
             print("检测到 .env 变化，配置已热加载")
 
 

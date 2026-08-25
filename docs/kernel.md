@@ -28,7 +28,8 @@ async def main():
     agent = Agent(
         "qwen3:8b",
         ToolRegistry(),
-        Settings(provider="ollama", model="qwen3:8b"),
+        Settings(provider="my_provider", model="qwen3:8b"),
+        provider=MyProvider(model, settings),   # 直接传入 Provider 实例
     )
     result = await agent.turn("你好")
     print(result.content)
@@ -39,6 +40,26 @@ asyncio.run(main())
 
 `Agent.turn()` 是一个完整回合：追加用户消息、跑模型、执行工具闭环、还原工具包、
 写入长期记忆，最后返回 `TurnResult`。
+
+## 接入 Provider
+
+内核只定义 `ChatChunk` 和 `Provider` 抽象，不内置任何具体模型厂商。
+外部软件实现自己的 Provider，注册名字或直接传入实例：
+
+```text
+from yuki_kernel import Provider
+from yuki_kernel.providers import register_provider
+
+class MyProvider(Provider):
+    async def chat(self, messages, tools=None, **kwargs):
+        ...
+
+register_provider("my_provider", MyProvider)
+settings = Settings(provider="my_provider", model="my-model")
+```
+
+也可以不注册，直接把 Provider 实例传给 Agent。Yuki 示例在 `src/yuki/providers.py`
+注册了 `ollama` 和 `api` 两个实现，仅作为参考。
 
 ## 注入人格（后天记忆）
 

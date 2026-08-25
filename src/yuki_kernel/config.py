@@ -7,8 +7,8 @@ from typing import Optional
 
 @dataclass
 class Settings:
-    provider: str = "ollama"
-    model: str = "qwen3:8b"
+    provider: str
+    model: str
     think: bool = True
     openai_base_url: Optional[str] = None
     openai_api_key: Optional[str] = None

@@ -9,9 +9,9 @@ from yuki_kernel.providers import ChatChunk, Provider
 class FakeProvider(Provider):
     def __init__(
         self,
+        settings: Settings,
         script: Optional[list[list[ChatChunk]]] = None,
         model: str = "fake",
-        settings: Optional[Settings] = None,
         errors: Optional[list[Exception]] = None,
     ):
         super().__init__(model, settings)
