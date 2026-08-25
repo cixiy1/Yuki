@@ -16,6 +16,8 @@ from yuki_kernel.core.app import App
 from yuki_kernel.core.session import SessionStore
 from yuki_kernel.skills.package_manager import PackageManager
 
+EXAMPLE_ROOT = Path(__file__).resolve().parent.parent.parent
+
 
 def _env_mtime(project_root: Path):
     env_file = project_root / ".env"
@@ -25,10 +27,10 @@ def _env_mtime(project_root: Path):
 
 
 async def watch_env(app: App, stop: asyncio.Event):
-    last = _env_mtime(app.settings.project_root)
+    last = _env_mtime(EXAMPLE_ROOT)
     while not stop.is_set():
         await asyncio.sleep(2)
-        current = _env_mtime(app.settings.project_root)
+        current = _env_mtime(EXAMPLE_ROOT)
         if current is not None and current != last:
             last = current
             await app.reload()
@@ -37,8 +39,12 @@ async def watch_env(app: App, stop: asyncio.Event):
 
 async def main():
     settings = Settings.load()
-    store = SessionStore(settings.data_dir)
-    package_manager = PackageManager(settings.packages_dir)
+    packages_dir = settings.packages_dir or EXAMPLE_ROOT / "packages"
+    data_dir = settings.data_dir or EXAMPLE_ROOT / "data"
+    settings.packages_dir = packages_dir
+    settings.data_dir = data_dir
+    store = SessionStore(data_dir)
+    package_manager = PackageManager(packages_dir)
     app = App(settings, store, package_manager, approver=cli_approver)
     stop = asyncio.Event()
     watcher = asyncio.create_task(watch_env(app, stop))

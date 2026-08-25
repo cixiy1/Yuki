@@ -10,9 +10,6 @@ try:
 except ImportError:
     load_dotenv = None
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-
-
 def _bool_env(name: str, default: bool) -> bool:
     return os.getenv(name, str(default)).lower() in {"1", "true", "yes"}
 
@@ -36,9 +33,12 @@ def _csv_env(name: str) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
-def _resolve_path(value: str, default: str) -> Path:
-    path = Path(value) if value else Path(default)
-    return path if path.is_absolute() else PROJECT_ROOT / path
+def _resolve_env_path(name: str) -> Optional[Path]:
+    value = os.getenv(name, "")
+    if not value:
+        return None
+    path = Path(value)
+    return path if path.is_absolute() else Path.cwd() / path
 
 
 @dataclass
@@ -52,7 +52,7 @@ class Settings:
     openai_api_key: Optional[str] = None
     ollama_host: str = "127.0.0.1"
     ollama_port: int = 11434
-    packages_dir: Path = PROJECT_ROOT / "packages"
+    packages_dir: Optional[Path] = None
     packages: list[str] = field(default_factory=list)
     packages_preload: list[str] = field(default_factory=list)
     max_context_tokens: int = 12000
@@ -61,15 +61,14 @@ class Settings:
     namespace: str = "default"
     retry_max: int = 3
     retry_base: float = 0.5
-    data_dir: Path = PROJECT_ROOT / "data"
-    project_root: Path = PROJECT_ROOT
+    data_dir: Optional[Path] = None
 
     @classmethod
     def load(cls) -> "Settings":
         if load_dotenv is not None:
             load_dotenv(override=True)
-        packages_dir = _resolve_path(os.getenv("PACKAGES_DIR", ""), "packages")
-        data_dir = _resolve_path(os.getenv("DATA_DIR", ""), "data")
+        packages_dir = _resolve_env_path("PACKAGES_DIR")
+        data_dir = _resolve_env_path("DATA_DIR")
         return cls(
             provider=os.getenv("AGENT_PROVIDER", "ollama"),
             model=os.getenv("AGENT_MODEL", "qwen3:8b"),

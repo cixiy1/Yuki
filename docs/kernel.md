@@ -91,11 +91,12 @@ loaded = SessionStore.import_file(Path("robot.jsonl"), name="robot")
 agent.switch_session(loaded)
 ```
 
-`SessionStore.save/load/list_sessions` 负责在 `data/sessions/` 持久化和索引。
+`SessionStore` 需要外部软件传入 `data_dir`，内核不假设任何目录；
+`save/load/list_sessions` 负责在外部给定的目录里持久化和索引。
 
 ## 长期记忆
 
-长期记忆按 `namespace` 隔离，适合多个机器人共用同一个内核：
+长期记忆按 `namespace` 隔离，适合多个机器人共用同一个内核；存储目录由外部软件传入：
 
 ```text
 from yuki_kernel import MemoryStore
@@ -114,7 +115,7 @@ hits = memory.search("你好")
 from yuki_kernel import ToolRegistry
 
 registry = ToolRegistry(
-    "packages",
+    packages_dir,                # 外部软件提供包目录
     available=["weather"],          # 白名单，留空表示全部
     preload=["weather"],            # 启动即加载
 )
@@ -180,11 +181,14 @@ config_reload`。
 - `AGENT_MODEL`：模型名
 - `AGENT_THINK`：是否开启思考
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL`：API provider
-- `PACKAGES_DIR` / `AGENT_PACKAGES` / `AGENT_PACKAGES_PRELOAD`
+- `PACKAGES_DIR` / `AGENT_PACKAGES` / `AGENT_PACKAGES_PRELOAD`（目录由外部软件配置，内核不假设）
 - `AGENT_MAX_CONTEXT_TOKENS` / `AGENT_KEEP_RECENT_MESSAGES`
 - `AGENT_MEMORY_LIMIT` / `AGENT_NAMESPACE`
 - `AGENT_RETRY_MAX` / `AGENT_RETRY_BASE`
-- `DATA_DIR`
+- `DATA_DIR`（会话和长期记忆目录由外部软件配置）
+
+`PACKAGES_DIR`、`DATA_DIR` 未设置时内核不加载外置包、不启用持久化记忆；
+具体目录由外层软件决定。示例 Yuki 在自己的入口里默认使用仓库下的 `packages/` 和 `data/`。
 
 完整说明见 [.env.example](../.env.example)。
 

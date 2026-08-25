@@ -22,7 +22,11 @@ class App:
         self.store = store
         self.package_manager = package_manager
         self.approver = approver
-        self.memory_store = MemoryStore(settings.data_dir, namespace=settings.namespace)
+        self.memory_store = (
+            MemoryStore(settings.data_dir, namespace=settings.namespace)
+            if settings.data_dir is not None
+            else None
+        )
         self.session: Session = store.create()
         self.registry = self._build_registry()
         self.agent = self._build_agent()
@@ -32,11 +36,13 @@ class App:
             self.settings.packages_dir,
             available=self.settings.packages or None,
             preload=self.settings.packages_preload,
-            memory_searcher=lambda query: self.memory_store.search_text(
-                query,
-                self.settings.memory_limit,
-            ),
+            memory_searcher=self._memory_searcher,
         )
+
+    def _memory_searcher(self, query: str) -> str:
+        if self.memory_store is None:
+            return "长期记忆未启用"
+        return self.memory_store.search_text(query, self.settings.memory_limit)
 
     def _build_agent(self) -> Agent:
         return Agent(
@@ -51,9 +57,10 @@ class App:
 
     async def reload(self) -> None:
         self.settings = Settings.load()
-        self.memory_store = MemoryStore(
-            self.settings.data_dir,
-            namespace=self.settings.namespace,
+        self.memory_store = (
+            MemoryStore(self.settings.data_dir, namespace=self.settings.namespace)
+            if self.settings.data_dir is not None
+            else None
         )
         self.registry = self._build_registry()
         self.agent = self._build_agent()

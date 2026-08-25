@@ -25,6 +25,7 @@ def settings(tmp_path):
 
 @pytest.fixture
 def store(settings):
+    assert settings.data_dir is not None
     return SessionStore(settings.data_dir)
 
 
