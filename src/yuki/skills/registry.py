@@ -6,7 +6,7 @@ import subprocess
 import sys
 from types import ModuleType
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, Callable, Optional, Union, cast
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .external import discover_packages, load_package
@@ -76,8 +76,8 @@ def _require_entry(tool: Tool) -> ToolEntry:
 def _run_handler(handler: Any, arguments: dict[str, Any]) -> str:
     if not callable(handler):
         return "handler 不可调用"
-    result = handler(**arguments)
-    return "" if result is None else str(result)
+    result = cast(Callable[..., str], handler)(**arguments)
+    return f"{result}"
 
 
 class ToolRegistry:
