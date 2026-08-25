@@ -4,13 +4,31 @@ import importlib.util
 import json
 import subprocess
 import sys
+from types import ModuleType
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, TypedDict, Union, cast
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .external import discover_packages, load_package
 
 PathLike = Union[str, Path]
+
+
+class ToolEntry(TypedDict, total=False):
+    type: str
+    module: str
+    handler: str
+    command: list[str]
+
+
+class Tool(TypedDict, total=False):
+    name: str
+    description: str
+    parameters: dict[str, Any]
+    entry: ToolEntry
+    package: str
+    package_dir: str
+
 
 META_NAMES = {"list_packages", "load_package", "unload_package"}
 
@@ -51,7 +69,7 @@ META_TOOLS = [
 ]
 
 
-def to_function_schema(tool: dict[str, Any]) -> dict[str, Any]:
+def to_function_schema(tool: Tool) -> dict[str, Any]:
     """把内部工具定义转成 OpenAI 兼容的函数 schema。"""
     return {
         "type": "function",
@@ -61,6 +79,19 @@ def to_function_schema(tool: dict[str, Any]) -> dict[str, Any]:
             "parameters": tool["parameters"],
         },
     }
+
+
+def _require_entry(tool: Tool) -> ToolEntry:
+    entry = tool.get("entry")
+    if entry is None:
+        raise ValueError("缺少执行入口")
+    return entry
+
+
+def _run_handler(handler: Any, arguments: dict[str, Any]) -> str:
+    if not callable(handler):
+        return "handler 不可调用"
+    return str(cast(Callable[..., Any], handler)(**arguments))
 
 
 class ToolRegistry:
@@ -77,11 +108,11 @@ class ToolRegistry:
         available: Optional[list[str]] = None,
         preload: Optional[list[str]] = None,
     ):
-        self._tools: dict[str, dict[str, Any]] = {}
+        self._tools: dict[str, Tool] = {}
         self._prompts: dict[str, dict[str, Any]] = {}
         self._packages: dict[str, dict[str, Any]] = {}
         self._active_packages: set[str] = set()
-        self._modules: dict[str, Any] = {}
+        self._modules: dict[str, ModuleType] = {}
         self.load_builtin()
         if packages_dir is not None:
             self.scan_packages(Path(packages_dir), available=available)
@@ -120,7 +151,10 @@ class ToolRegistry:
         skills_dir = Path(__file__).resolve().parent
         for tool in BUILTIN_TOOLS:
             self.register_tool(
-                {**tool, "package": "builtin", "package_dir": str(skills_dir)}
+                cast(
+                    Tool,
+                    {**tool, "package": "builtin", "package_dir": str(skills_dir)},
+                )
             )
         for prompt in BUILTIN_PROMPTS:
             content = (skills_dir / prompt["path"]).read_text(encoding="utf-8")
@@ -160,14 +194,15 @@ class ToolRegistry:
         if package is None:
             return f"未找到可用工具包：{package_id}"
 
-        for tool in package["tools"]:
+        tools = cast(list[Tool], package["tools"])
+        for tool in tools:
             if tool["name"] in self._tools or tool["name"] in META_NAMES:
                 return f"加载 {package_id} 失败：工具名冲突 {tool['name']}"
         for prompt in package["prompts"]:
             if prompt["name"] in self._prompts:
                 return f"加载 {package_id} 失败：提示词名冲突 {prompt['name']}"
 
-        for tool in package["tools"]:
+        for tool in tools:
             self.register_tool(tool)
         for prompt in package["prompts"]:
             self.register_prompt(prompt)
@@ -202,7 +237,7 @@ class ToolRegistry:
                 changed.append(package_id)
         return changed
 
-    def register_tool(self, tool: dict[str, Any]) -> None:
+    def register_tool(self, tool: Tool) -> None:
         name = tool["name"]
         if name in META_NAMES:
             raise ValueError(f"工具名 {name} 是保留名")
@@ -235,9 +270,10 @@ class ToolRegistry:
         tool = self._tools.get(name)
         if tool is None:
             return f"Unknown tool: {name}"
-        entry = tool.get("entry")
-        if not isinstance(entry, dict):
-            return f"工具 {name} 缺少执行入口"
+        try:
+            entry = _require_entry(tool)
+        except ValueError as err:
+            return str(err)
         entry_type = entry.get("type")
         if entry_type == "python":
             return self._execute_python(tool, arguments)
@@ -265,11 +301,12 @@ class ToolRegistry:
             )
         return "\n".join(lines) or "暂无可用工具包"
 
-    def _execute_python(self, tool: dict[str, Any], arguments: dict[str, Any]) -> str:
-        entry = tool.get("entry")
-        if not isinstance(entry, dict):
-            return "模块加载失败：缺少执行入口"
-        module = entry.get("module") or ""
+    def _execute_python(self, tool: Tool, arguments: dict[str, Any]) -> str:
+        try:
+            entry = _require_entry(tool)
+        except ValueError as err:
+            return str(err)
+        module = entry["module"]
         module_path = Path(tool["package_dir"]) / module
         module_name = "_".join(
             ["_yuki_pkg", tool.get("package", "?"), module.removesuffix(".py")]
@@ -282,28 +319,23 @@ class ToolRegistry:
             loader = spec.loader
             if loader is None:
                 return f"无法加载模块：{module_path}"
-            loaded = importlib.util.module_from_spec(spec)
+            loaded = cast(ModuleType, importlib.util.module_from_spec(spec))
             sys.modules[module_name] = loaded
             loader.exec_module(loaded)
             self._modules[module_name] = loaded
 
-        handler_name = entry.get("handler")
-        if not handler_name:
-            return f"模块 {module_path} 缺少 handler 字段"
-        try:
-            handler = getattr(loaded, handler_name)
-        except AttributeError:
-            return f"模块 {module_path} 中找不到函数：{handler_name}"
-        return str(handler(**arguments))
+        handler = getattr(loaded, entry["handler"])
+        return _run_handler(handler, arguments)
 
     @staticmethod
-    def _execute_command(tool: dict[str, Any], arguments: dict[str, Any]) -> str:
-        entry = tool.get("entry")
-        if not isinstance(entry, dict):
-            return "工具执行失败：缺少执行入口"
+    def _execute_command(tool: Tool, arguments: dict[str, Any]) -> str:
+        try:
+            entry = _require_entry(tool)
+        except ValueError as err:
+            return str(err)
         command = [
             part.replace("{python}", sys.executable)
-            for part in (entry.get("command") or [])
+            for part in entry["command"]
         ]
         try:
             result = subprocess.run(
