@@ -45,7 +45,7 @@ async def main():
     try:
         await app.agent.start()
         await run(app)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, asyncio.CancelledError):
         print(".\n手动退出....")
     finally:
         stop.set()
