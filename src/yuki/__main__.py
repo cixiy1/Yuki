@@ -50,10 +50,9 @@ async def main():
         watcher.cancel()
         try:
             await app.agent.close()
-            print("/n程序结束，资源清理完成")
+            print("\n程序结束，资源清理完成")
         except Exception as err:
             print(f"资源清理异常：{repr(err)}")
-
 
 if __name__ == "__main__":
     try:
