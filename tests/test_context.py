@@ -29,3 +29,18 @@ async def test_summarize_oldest(settings):
         message.get("content", "").startswith("[历史摘要]")
         for message in agent.memory
     )
+
+
+@pytest.mark.asyncio
+async def test_no_summary_when_under_budget(settings):
+    settings.max_context_tokens = 100000
+    fake = FakeProvider(
+        script=[[ChatChunk(content="ok"), ChatChunk(done=True)]],
+        settings=settings,
+    )
+    agent = Agent("fake", ToolRegistry(None), settings, provider=fake)
+
+    async for _ in agent.send_message("你好"):
+        pass
+
+    assert fake.calls == 1

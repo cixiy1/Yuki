@@ -57,6 +57,7 @@ class Settings:
     packages_preload: list[str] = field(default_factory=list)
     max_context_tokens: int = 12000
     keep_recent_messages: int = 10
+    memory_limit: int = 5
     retry_max: int = 3
     retry_base: float = 0.5
     data_dir: Path = PROJECT_ROOT / "data"
@@ -81,6 +82,7 @@ class Settings:
             packages_preload=_csv_env("AGENT_PACKAGES_PRELOAD"),
             max_context_tokens=_int_env("AGENT_MAX_CONTEXT_TOKENS", 12000),
             keep_recent_messages=_int_env("AGENT_KEEP_RECENT_MESSAGES", 10),
+            memory_limit=_int_env("AGENT_MEMORY_LIMIT", 5),
             retry_max=_int_env("AGENT_RETRY_MAX", 3),
             retry_base=_float_env("AGENT_RETRY_BASE", 0.5),
             data_dir=data_dir,

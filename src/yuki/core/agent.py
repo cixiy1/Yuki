@@ -10,6 +10,7 @@ from ..skills import ToolRegistry
 from .bus import EventBus
 from .errors import ProviderError, is_transient
 from .events import AgentEvent
+from .memory import MemoryStore
 from .middleware import Middleware, run_after, run_before
 from .session import Session
 from .tools import merge_tool_calls
@@ -29,6 +30,7 @@ class Agent:
         middlewares: Optional[list[Middleware]] = None,
         bus: Optional[EventBus] = None,
         approver: Optional[Approver] = None,
+        memory_store: Optional[MemoryStore] = None,
     ):
         self.model = model
         self.settings = settings
@@ -39,6 +41,7 @@ class Agent:
         self.middlewares = list(middlewares or [])
         self.bus = bus or EventBus()
         self.approver = approver
+        self.memory_store = memory_store
         if isinstance(provider, Provider):
             self.provider = provider
         else:
@@ -85,7 +88,11 @@ class Agent:
         if event.context.get("abort"):
             return
         self.memory.append({"role": "user", "content": user_message})
-        async for chunk in self._stream_with_hooks(self.memory, self.registry.tools):
+        async for chunk in self._stream_with_hooks(
+            self.memory,
+            self.registry.tools,
+            query=user_message,
+        ):
             yield chunk
 
     async def continue_with_tools(
@@ -102,12 +109,40 @@ class Agent:
         self,
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]],
+        query: Optional[str] = None,
     ) -> AsyncIterator[ChatChunk]:
+        messages = await self._with_memory(messages, query)
         await self._ensure_context_budget()
         await self._emit("before_model", {"messages": messages, "tools": tools})
         async for chunk in self._chat_with_retry(messages, tools=tools):
             await self._emit("assistant_chunk", chunk)
             yield chunk
+
+    async def _with_memory(
+        self,
+        messages: list[dict[str, Any]],
+        query: Optional[str],
+    ) -> list[dict[str, Any]]:
+        if self.memory_store is None or not query:
+            return messages
+        hits = await asyncio.to_thread(
+            self.memory_store.search,
+            query,
+            self.settings.memory_limit,
+        )
+        if not hits:
+            return messages
+        block = "[长期记忆]\n" + "\n".join(f"- {hit.content}" for hit in hits)
+        extra = {"role": "system", "content": block}
+        if messages and messages[0].get("role") == "system":
+            return [messages[0], extra, *messages[1:]]
+        return [extra, *messages]
+
+    async def remember(self, user_content: str, assistant_content: str) -> None:
+        if self.memory_store is None:
+            return
+        content = f"用户：{user_content}\n助手：{assistant_content}"
+        await asyncio.to_thread(self.memory_store.add, self.session.session_id, content)
 
     async def execute_tool_calls(self, tool_calls: list[Any]) -> list[dict[str, Any]]:
         results = []
@@ -213,6 +248,12 @@ class Agent:
         self.memory[1 : len(self.memory) - keep] = [
             {"role": "system", "content": "[历史摘要] " + summary.strip()}
         ]
+        if self.memory_store is not None:
+            await asyncio.to_thread(
+                self.memory_store.add,
+                self.session.session_id,
+                "摘要：" + summary.strip(),
+            )
         return True
 
     async def _collect(self, messages: list[dict[str, Any]]) -> str:

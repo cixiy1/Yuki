@@ -282,4 +282,5 @@ async def run(app: App) -> None:
         if changed:
             print(f"外置包已还原：{'、'.join(changed)}")
         if out.content:
+            await app.agent.remember(line, out.content)
             app.agent.memory.append({"role": "assistant", "content": out.content})

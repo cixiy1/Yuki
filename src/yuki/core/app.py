@@ -6,6 +6,7 @@ from ..config import Settings
 from ..skills import ToolRegistry
 from ..skills.package_manager import PackageManager
 from .agent import Agent, Approver
+from .memory import MemoryStore
 from .session import Session, SessionStore
 
 
@@ -21,6 +22,7 @@ class App:
         self.store = store
         self.package_manager = package_manager
         self.approver = approver
+        self.memory_store = MemoryStore(settings.data_dir)
         self.session: Session = store.create()
         self.registry = self._build_registry()
         self.agent = self._build_agent()
@@ -40,6 +42,7 @@ class App:
             session=self.session,
             provider=self.settings.provider,
             approver=self.approver,
+            memory_store=self.memory_store,
         )
 
     async def reload(self) -> None:
