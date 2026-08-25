@@ -3,6 +3,7 @@
 import asyncio
 import os
 import sys
+import traceback
 from pathlib import Path
 from typing import cast
 
@@ -53,18 +54,20 @@ async def main():
             await watcher
         except asyncio.CancelledError:
             pass
+        err = sys.exc_info()[1]
+        if err is not None:
+            traceback.print_exception(*sys.exc_info())
         try:
             await app.agent.close()
             print("\n程序结束，资源清理完成")
         except Exception as err:
             print(f"资源清理异常：{repr(err)}")
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(1 if err is not None else 0)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
-    else:
-        sys.stdout.flush()
-        sys.stderr.flush()
-        os._exit(0)
