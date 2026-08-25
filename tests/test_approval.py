@@ -39,7 +39,7 @@ def _registry(tmp_path):
 async def test_approve_once_not_remembered(settings, tmp_path):
     calls = {"count": 0}
 
-    async def approver(name, arguments):
+    async def approver(_name, _arguments):
         calls["count"] += 1
         return "y"
 
@@ -62,7 +62,7 @@ async def test_approve_once_not_remembered(settings, tmp_path):
 async def test_approve_remember_session(settings, tmp_path):
     calls = {"count": 0}
 
-    async def approver(name, arguments):
+    async def approver(_name, _arguments):
         calls["count"] += 1
         return "ya"
 
@@ -87,7 +87,7 @@ async def test_approve_remember_session(settings, tmp_path):
 
 @pytest.mark.asyncio
 async def test_approve_denied(settings, tmp_path):
-    async def approver(name, arguments):
+    async def approver(_name, _arguments):
         return "n"
 
     agent = Agent(

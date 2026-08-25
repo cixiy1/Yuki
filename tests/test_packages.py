@@ -17,11 +17,11 @@ async def test_install_remove_list(tmp_path, example_packages):
     info = await manager.install(LocalDirSource(), str(example_packages / "weather"))
     assert info.id == "weather"
     assert (packages_dir / "weather").is_dir()
-    assert [item.id for item in manager.list()] == ["weather"]
+    assert [item.id for item in manager.list_installed()] == ["weather"]
 
     manager.remove("weather")
     assert not (packages_dir / "weather").exists()
-    assert manager.list() == []
+    assert manager.list_installed() == []
 
 
 @pytest.mark.asyncio

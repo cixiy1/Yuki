@@ -27,13 +27,13 @@ packages/
 
 ## tools[] 字段
 
-| 字段          | 必填 | 类型   | 说明                                         |
-| ------------- | ---- | ------ | -------------------------------------------- |
-| `name`        | 是   | string | 工具名，模型调用时使用，包内和跨包都不能重复 |
-| `description` | 是   | string | 工具说明，会发给模型                         |
-| `parameters`  | 是   | object | 参数结构，JSON Schema                        |
-| `entry`       | 是   | object | 工具执行入口                                 |
-| `requires_approval` | 否 | bool | 为 `true` 时执行前需要用户审批               |
+| 字段                | 必填 | 类型   | 说明                                         |
+| ------------------- | ---- | ------ | -------------------------------------------- |
+| `name`              | 是   | string | 工具名，模型调用时使用，包内和跨包都不能重复 |
+| `description`       | 是   | string | 工具说明，会发给模型                         |
+| `parameters`        | 是   | object | 参数结构，JSON Schema                        |
+| `entry`             | 是   | object | 工具执行入口                                 |
+| `requires_approval` | 否   | bool   | 为 `true` 时执行前需要用户审批               |
 
 ## entry 字段
 

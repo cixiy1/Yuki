@@ -135,5 +135,5 @@ class PackageManager:
         entries.pop(package_id, None)
         self._write_registry(entries)
 
-    def list(self) -> list[PackageInfo]:
+    def list_installed(self) -> list[PackageInfo]:
         return sorted(self._read_registry().values(), key=lambda item: item.id)

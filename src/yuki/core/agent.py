@@ -8,7 +8,7 @@ from ..config import Settings
 from ..providers import ChatChunk, Provider, create_provider
 from ..skills import ToolRegistry
 from .bus import EventBus
-from .errors import is_transient
+from .errors import ProviderError, is_transient
 from .events import AgentEvent
 from .middleware import Middleware, run_after, run_before
 from .session import Session
@@ -29,7 +29,6 @@ class Agent:
         middlewares: Optional[list[Middleware]] = None,
         bus: Optional[EventBus] = None,
         approver: Optional[Approver] = None,
-        **provider_kwargs,
     ):
         self.model = model
         self.settings = settings
@@ -86,10 +85,7 @@ class Agent:
         if event.context.get("abort"):
             return
         self.memory.append({"role": "user", "content": user_message})
-        await self._ensure_context_budget()
-        await self._emit("before_model", {"messages": self.memory, "tools": self.registry.tools})
-        async for chunk in self._chat_with_retry(self.memory, tools=self.registry.tools):
-            await self._emit("assistant_chunk", chunk)
+        async for chunk in self._stream_with_hooks(self.memory, self.registry.tools):
             yield chunk
 
     async def continue_with_tools(
@@ -99,9 +95,17 @@ class Agent:
     ) -> AsyncIterator[ChatChunk]:
         calls = merge_tool_calls(tool_calls)
         self.memory.extend(self.provider.build_tool_messages(calls, results))
+        async for chunk in self._stream_with_hooks(self.memory, self.registry.tools):
+            yield chunk
+
+    async def _stream_with_hooks(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+    ) -> AsyncIterator[ChatChunk]:
         await self._ensure_context_budget()
-        await self._emit("before_model", {"messages": self.memory, "tools": self.registry.tools})
-        async for chunk in self._chat_with_retry(self.memory, tools=self.registry.tools):
+        await self._emit("before_model", {"messages": messages, "tools": tools})
+        async for chunk in self._chat_with_retry(messages, tools=tools):
             await self._emit("assistant_chunk", chunk)
             yield chunk
 
@@ -202,7 +206,7 @@ class Agent:
         ]
         try:
             summary = await self._collect(prompt)
-        except Exception:
+        except (ProviderError, ConnectionError, TimeoutError, OSError):
             return False
         if not summary.strip():
             return False

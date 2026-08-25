@@ -155,7 +155,7 @@ async def render_response(out: Response) -> list[Any]:
     return out.tool_calls
 
 
-async def cli_approver(name: str, arguments: dict[str, Any]) -> str:
+async def cli_approver(name: str, _arguments: dict[str, Any]) -> str:
     answer = await asyncio.to_thread(
         input,
         f"工具 {name} 需要审批 (y / ya / y <分钟> / n)：",
@@ -196,7 +196,7 @@ async def handle_pkg(app: App, arg: str) -> None:
         except Exception as err:
             print(f"卸载失败：{err}")
     elif sub == "list":
-        infos = app.package_manager.list()
+        infos = app.package_manager.list_installed()
         if not infos:
             print("暂无已安装包")
             return
@@ -222,7 +222,11 @@ async def handle_command(app: App, line: str) -> bool:
         if not arg:
             print("用法：/load <名字>")
             return True
-        meta = next((item for item in app.store.list() if item.name == arg), None)
+        meta = None
+        for item in app.store.list_sessions():
+            if item.name == arg:
+                meta = item
+                break
         if meta is None:
             print(f"找不到会话：{arg}")
             return True
@@ -233,7 +237,7 @@ async def handle_command(app: App, line: str) -> bool:
         app.agent.switch_session(session)
         print(f"已加载会话：{arg}")
     elif cmd == "/sessions":
-        metas = app.store.list()
+        metas = app.store.list_sessions()
         if not metas:
             print("暂无已保存会话")
             return True

@@ -1,7 +1,7 @@
 """OpenAI 兼容 API 的异步 provider。"""
 
 import json
-from typing import Any, AsyncIterator, Mapping, Optional, Sequence
+from typing import Any, AsyncIterator, Mapping, Optional, Sequence, cast
 
 from ..config import Settings
 from .base import ChatChunk, Provider
@@ -35,12 +35,15 @@ class ApiProvider(Provider):
         if self.settings.think:
             extra_body = kwargs.setdefault("extra_body", {})
             extra_body.setdefault("thinking", {"type": "enabled"})
-        stream = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            tools=tools,
-            stream=True,
-            **kwargs,
+        stream = cast(
+            Any,
+            await self.client.chat.completions.create(
+                model=cast(Any, self.model),
+                messages=cast(Any, messages),
+                tools=cast(Any, tools),
+                stream=True,
+                **kwargs,
+            ),
         )
         try:
             async for chunk in stream:
@@ -61,7 +64,7 @@ class ApiProvider(Provider):
         finally:
             try:
                 await stream.close()
-            except Exception:
+            except (AttributeError, RuntimeError, OSError):
                 pass
 
     async def close(self, skip_unload: bool = False):

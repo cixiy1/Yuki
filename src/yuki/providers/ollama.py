@@ -8,7 +8,6 @@ from typing import Any, AsyncIterator, Mapping, Optional, Sequence
 
 import ollama
 
-from ..config import Settings
 from .base import ChatChunk, Provider
 
 ollama_proc: Optional[subprocess.Popen] = None
@@ -67,6 +66,7 @@ class OllamaProvider(Provider):
         **kwargs,
     ) -> AsyncIterator[ChatChunk]:
         kwargs.setdefault("think", self.settings.think)
+        # noinspection HttpUrlsUsage
         client = ollama.AsyncClient(
             host=f"http://{self.settings.ollama_host}:{self.settings.ollama_port}"
         )
@@ -83,12 +83,13 @@ class OllamaProvider(Provider):
                 thinking=msg.thinking,
                 content=msg.content,
                 tool_calls=list(msg.tool_calls or []),
-                done=chunk.done,
+                done=bool(chunk.done),
             )
 
     async def close(self, skip_unload: bool = False):
         if not skip_unload:
             try:
+                # noinspection HttpUrlsUsage
                 client = ollama.AsyncClient(
                     host=f"http://{self.settings.ollama_host}:{self.settings.ollama_port}"
                 )

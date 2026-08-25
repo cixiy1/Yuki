@@ -73,7 +73,8 @@ class SessionStore:
                 """
             )
 
-    def create(self, name: str = "") -> Session:
+    @staticmethod
+    def create(name: str = "") -> Session:
         return Session(name=name)
 
     def save(self, session: Session) -> None:
@@ -112,7 +113,7 @@ class SessionStore:
         session.updated_at = row[2]
         return session
 
-    def list(self) -> list[SessionMeta]:
+    def list_sessions(self) -> list[SessionMeta]:
         with sqlite3.connect(self.db_path) as conn:
             rows = conn.execute(
                 """

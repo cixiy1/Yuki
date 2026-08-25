@@ -23,7 +23,7 @@ class Provider(ABC):
         self.settings = settings or Settings.load()
 
     @abstractmethod
-    async def chat(
+    def chat(
         self,
         messages: Sequence[Mapping[str, Any]],
         tools: Optional[Sequence[Mapping[str, Any]]] = None,

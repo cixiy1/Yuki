@@ -15,7 +15,7 @@ async def test_session_commands(settings, store, tmp_path):
     app = App(
         settings,
         store,
-        PackageManager(tmp_path / "pkgs"),
+        PackageManager(tmp_path / "packages"),
     )
     app.agent.provider = FakeProvider(
         script=[[ChatChunk(content="ok"), ChatChunk(done=True)]],
@@ -24,7 +24,7 @@ async def test_session_commands(settings, store, tmp_path):
     app.session.messages.append({"role": "user", "content": "你好"})
 
     await handle_command(app, "/save 测试会话")
-    assert [meta.name for meta in store.list()] == ["测试会话"]
+    assert [meta.name for meta in store.list_sessions()] == ["测试会话"]
 
     await handle_command(app, "/new")
     assert [message["role"] for message in app.agent.memory] == ["system"]
@@ -34,4 +34,4 @@ async def test_session_commands(settings, store, tmp_path):
     assert app.agent.memory[-1] == {"role": "user", "content": "你好"}
 
     await handle_command(app, "/sessions")
-    assert [meta.name for meta in store.list()] == ["测试会话"]
+    assert [meta.name for meta in store.list_sessions()] == ["测试会话"]
