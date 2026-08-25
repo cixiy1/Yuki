@@ -5,7 +5,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .external import discover_packages, load_package
@@ -237,7 +237,7 @@ class ToolRegistry:
             return f"Unknown tool: {name}"
         if "entry" not in tool:
             handler = tool.get("handler")
-            if not callable(handler):
+            if not isinstance(handler, Callable):
                 return f"工具 {name} 缺少可调用的 handler"
             return str(handler(**arguments))
 
@@ -288,7 +288,7 @@ class ToolRegistry:
             self._modules[module_name] = module
 
         handler = getattr(module, entry["handler"], None)
-        if not callable(handler):
+        if not isinstance(handler, Callable):
             return f"模块 {module_path} 中找不到函数：{entry['handler']}"
         return str(handler(**arguments))
 
