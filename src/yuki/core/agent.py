@@ -17,6 +17,8 @@ from .tools import merge_tool_calls
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 
+HISTORY_KEYWORDS = ("前面", "之前", "历史", "上下文", "发了", "说过", "分号")
+
 
 class Agent:
     def __init__(
@@ -123,7 +125,11 @@ class Agent:
         messages: list[dict[str, Any]],
         query: Optional[str],
     ) -> list[dict[str, Any]]:
-        if self.memory_store is None or not query:
+        if (
+            self.memory_store is None
+            or not query
+            or any(keyword in query for keyword in HISTORY_KEYWORDS)
+        ):
             return messages
         hits = await asyncio.to_thread(
             self.memory_store.search,
@@ -132,7 +138,9 @@ class Agent:
         )
         if not hits:
             return messages
-        block = "[长期记忆]\n" + "\n".join(f"- {hit.content}" for hit in hits)
+        block = "[长期记忆（历史会话，非当前对话）]\n" + "\n".join(
+            f"- {hit.content}" for hit in hits
+        )
         extra = {"role": "system", "content": block}
         if messages and messages[0].get("role") == "system":
             return [messages[0], extra, *messages[1:]]

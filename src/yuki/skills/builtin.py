@@ -29,4 +29,9 @@ BUILTIN_PROMPTS = [
         "description": "命令生成前的环境信息使用提示",
         "path": "builtins/prompts/environment_guide.md",
     },
+    {
+        "name": "conversation_guide",
+        "description": "回答上下文/历史类问题时的提示",
+        "path": "builtins/prompts/conversation_guide.md",
+    },
 ]
