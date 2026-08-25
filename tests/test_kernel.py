@@ -4,7 +4,8 @@ import pytest
 
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.core.memory import MemoryStore
-from yuki_kernel.core.session import Session, SessionStore
+from yuki_kernel.core.memory import Session
+from yuki_kernel.core.memory import SessionStore
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills import ToolRegistry
 

@@ -3,8 +3,8 @@
 import re
 
 from yuki_kernel.core.app import App
-from yuki_kernel.core.stream import TagFilter
-from yuki_kernel.core.stream import clean_content
+from yuki_kernel.core.context import TagFilter
+from yuki_kernel.core.context import clean_content
 
 SENTENCE_SPLIT = re.compile(r"(?<=[。！？!?])")
 

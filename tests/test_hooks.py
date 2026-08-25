@@ -3,9 +3,9 @@
 import pytest
 
 from yuki_kernel.core.agent import Agent
-from yuki_kernel.core.bus import EventBus
+from yuki_kernel.core.events import EventBus
 from yuki_kernel.core.events import AgentEvent
-from yuki_kernel.core.middleware import Middleware
+from yuki_kernel.core.events import Middleware
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills import ToolRegistry
 

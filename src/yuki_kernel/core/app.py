@@ -6,8 +6,7 @@ from ..config import Settings
 from ..skills import ToolRegistry
 from ..skills.package_manager import PackageManager
 from .agent import Agent, Approver
-from .memory import MemoryStore
-from .session import Session, SessionStore
+from .memory import MemoryStore, Session, SessionStore
 
 
 class App:

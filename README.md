@@ -48,19 +48,20 @@ src/
     core/
       agent.py             # Agent：异步闭环 + 摘要 + 审批 + 钩子
       app.py               # 应用容器与热加载
-      session.py           # 会话与 JSONL/SQLite 持久化
-      memory.py            # 长期记忆（namespace 隔离）
-      stream.py            # 无头流式收集
-      events.py            # 事件类型
-      middleware.py        # 中间件链
-      bus.py               # 事件总线
       errors.py            # 异常与重试判断
+      events/              # 事件类型、总线、中间件
+      memory/              # 会话、持久化、长期记忆
+      context/             # 上下文预算、流式收集
+      policy/              # 审批等策略
     providers/             # Provider 抽象与实现
       base.py              # Provider / ChatChunk
       ollama.py            # Ollama 本地服务与 provider
       api.py               # OpenAI 兼容 API provider
     skills/                # 工具注册与实现
       registry.py          # ToolRegistry：统一内置工具与外置包
+      executor.py          # 工具执行器
+      meta.py              # 元工具定义
+      sources.py           # 包来源抽象
       builtin.py           # 内置工具注册表
       builtins/            # 内置工具实现
       external.py          # 外置包发现与校验
@@ -68,9 +69,11 @@ src/
   yuki/                    # 示例 agent（聊天外壳）
     __main__.py            # 入口与组装
     cli.py                 # 主循环
-    commands.py            # 斜杠命令分发
+    commands/              # 斜杠命令分发
+    providers/             # Ollama / API provider 实现
     approver.py            # 审批交互
     rendering.py           # 渲染与清洗
+    settings.py            # 环境变量 → Settings
 packages/                  # 外置工具包目录
 tests/                     # pytest 契约测试
 docs/

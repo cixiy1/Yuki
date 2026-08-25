@@ -22,7 +22,7 @@ async def test_summarize_oldest(settings):
     agent.memory.append({"role": "assistant", "content": "b" * 100})
     agent.memory.append({"role": "user", "content": "最近消息"})
 
-    await agent._ensure_context_budget()
+    await agent._context.ensure()
 
     assert fake.calls == 1
     assert any(

@@ -1,21 +1,19 @@
 """Agent：异步会话闭环，包含重试、摘要、审批与钩子。"""
 
 import asyncio
-import math
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Union
 
 from ..config import Settings
 from ..providers import ChatChunk, Provider, create_provider
 from ..skills import ToolRegistry
-from .bus import EventBus
-from .errors import ProviderError, is_transient
-from .events import AgentEvent
-from .memory import MemoryStore
-from .middleware import Middleware, run_after, run_before
-from .session import Session
-from .stream import StreamEvent, TagFilter, clean_content
-from .tools import merge_tool_calls
+from .context import ContextManager
+from .errors import is_transient
+from .events import AgentEvent, EventBus, Middleware, run_after, run_before
+from .memory import MemoryStore, Session
+from .policy import ApprovalGate
+from .context import StreamEvent, TagFilter, clean_content
+from ..skills.tools import merge_tool_calls
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 
@@ -56,6 +54,14 @@ class Agent:
             self.provider = provider
         else:
             self.provider = create_provider(provider, model, settings)
+        self._approval = ApprovalGate(self.registry, lambda: self.session, approver)
+        self._context = ContextManager(
+            settings,
+            lambda: self.memory,
+            self._chat_with_retry,
+            memory_store,
+            lambda: self.session.session_id,
+        )
         self._sync_system_prompt()
 
     def _sync_system_prompt(self):
@@ -175,7 +181,7 @@ class Agent:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]],
     ) -> AsyncIterator[ChatChunk]:
-        await self._ensure_context_budget()
+        await self._context.ensure()
         await self._emit("before_model", {"messages": messages, "tools": tools})
         async for chunk in self._chat_with_retry(messages, tools=tools):
             await self._emit("assistant_chunk", chunk)
@@ -193,7 +199,7 @@ class Agent:
             event = await self._emit("tool_call", call)
             if event.context.get("abort"):
                 content = "用户已中止"
-            elif not await self._check_approval(call["name"]):
+            elif not await self._approval.check(call["name"]):
                 content = "用户拒绝执行"
             else:
                 content = await asyncio.to_thread(
@@ -214,24 +220,6 @@ class Agent:
         self._sync_system_prompt()
         return changed
 
-    async def _check_approval(self, name: str) -> bool:
-        if not self.registry.needs_approval(name):
-            return True
-        if self.session.is_approved(name):
-            return True
-        if self.approver is None:
-            return False
-        answer = (await self.approver(name, {})).strip()
-        if answer == "ya":
-            self.session.approve(name)
-            return True
-        if answer.startswith("y"):
-            rest = answer[1:].strip()
-            if rest.isdigit():
-                self.session.approve(name, int(rest))
-            return True
-        return False
-
     async def _chat_with_retry(
         self,
         messages: list[dict[str, Any]],
@@ -246,68 +234,3 @@ class Agent:
                 if not is_transient(err) or attempt + 1 >= self.settings.retry_max:
                     raise
                 await asyncio.sleep(self.settings.retry_base * (2**attempt))
-
-    @staticmethod
-    def estimate_tokens(messages: list[dict[str, Any]]) -> int:
-        total = 0
-        for message in messages:
-            content = message.get("content") or ""
-            total += max(1, math.ceil(len(content) / 3)) + 4
-        return total
-
-    async def _ensure_context_budget(self) -> None:
-        if self.settings.max_context_tokens <= 0:
-            return
-        for _ in range(3):
-            if self.estimate_tokens(self.memory) <= self.settings.max_context_tokens:
-                return
-            if not await self._summarize_oldest():
-                self._drop_oldest()
-
-    async def _summarize_oldest(self) -> bool:
-        keep = self.settings.keep_recent_messages
-        if len(self.memory) - 1 <= keep:
-            return False
-        target = [
-            message
-            for message in self.memory[1 : len(self.memory) - keep]
-            if not (
-                message.get("role") == "system"
-                and str(message.get("content", "")).startswith("[历史摘要]")
-            )
-        ]
-        if not target:
-            return False
-        prompt = [
-            {"role": "system", "content": "把以下对话压缩成简洁中文摘要，保留关键事实、结论和未完成事项。"},
-            *target,
-        ]
-        try:
-            summary = await self._collect(prompt)
-        except (ProviderError, ConnectionError, TimeoutError, OSError):
-            return False
-        if not summary.strip():
-            return False
-        self.memory[1 : len(self.memory) - keep] = [
-            {"role": "system", "content": "[历史摘要] " + summary.strip()}
-        ]
-        if self.memory_store is not None:
-            await asyncio.to_thread(
-                self.memory_store.add,
-                self.session.session_id,
-                "摘要：" + summary.strip(),
-            )
-        return True
-
-    async def _collect(self, messages: list[dict[str, Any]]) -> str:
-        parts = []
-        async for chunk in self._chat_with_retry(messages, tools=None):
-            if chunk.content:
-                parts.append(chunk.content)
-        return "".join(parts)
-
-    def _drop_oldest(self) -> None:
-        for index, message in enumerate(self.memory):
-            if message.get("role") in {"user", "assistant"}:
-                self.memory.pop(index)
-                return

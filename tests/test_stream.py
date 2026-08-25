@@ -3,7 +3,7 @@
 import pytest
 
 from yuki.rendering import ContentFilter
-from yuki_kernel.core.stream import collect_stream
+from yuki_kernel.core.context import collect_stream
 from yuki_kernel.providers import ChatChunk
 
 

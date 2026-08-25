@@ -1,71 +1,15 @@
 """工具注册表：统一内置工具与外置工具包的 schema 与执行。"""
 
-import importlib.util
-import json
-import subprocess
-import sys
-from types import ModuleType
 from pathlib import Path
 from typing import Any, Callable, Optional, Union, cast
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
+from .executor import ToolExecutor, require_entry
 from .external import discover_packages, load_package
-from .types import Tool, ToolEntry
+from .meta import META_NAMES, META_TOOLS
+from .types import Tool
 
 PathLike = Union[str, Path]
-
-
-META_NAMES = {"list_packages", "load_package", "unload_package", "search_memory"}
-
-META_TOOLS = [
-    {
-        "name": "list_packages",
-        "description": "列出当前可用的外置工具包；当现有工具无法满足用户需求时，先调用本工具查找可加载的包",
-        "parameters": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "load_package",
-        "description": "加载一个外置工具包，之后它的工具和提示词才进入上下文；需要某项能力但当前没有对应工具时，用本工具加载对应包",
-        "parameters": {
-            "type": "object",
-            "required": ["package_id"],
-            "properties": {
-                "package_id": {
-                    "type": "string",
-                    "description": "外置工具包的 id",
-                }
-            },
-        },
-    },
-    {
-        "name": "unload_package",
-        "description": "卸载一个外置工具包，释放上下文空间",
-        "parameters": {
-            "type": "object",
-            "required": ["package_id"],
-            "properties": {
-                "package_id": {
-                    "type": "string",
-                    "description": "外置工具包的 id",
-                }
-            },
-        },
-    },
-    {
-        "name": "search_memory",
-        "description": "按关键词检索长期记忆，返回历史会话中的相关信息",
-        "parameters": {
-            "type": "object",
-            "required": ["query"],
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "要检索的关键词",
-                }
-            },
-        },
-    },
-]
 
 
 def to_function_schema(tool: Tool) -> dict[str, Any]:
@@ -80,30 +24,8 @@ def to_function_schema(tool: Tool) -> dict[str, Any]:
     }
 
 
-def _require_entry(tool: Tool) -> ToolEntry:
-    entry = tool.get("entry")
-    if entry is None:
-        raise ValueError("缺少执行入口")
-    return entry
-
-
-def _run_handler(handler: Any, arguments: dict[str, Any]) -> str:
-    if not callable(handler):
-        return "handler 不可调用"
-    try:
-        result = cast(Callable[..., str], handler)(**arguments)
-    except Exception as err:
-        return f"工具执行失败：{err}"
-    return f"{result}"
-
-
 class ToolRegistry:
-    """内置工具 + 外置工具包的注册表。
-
-    外置包默认只被发现不激活，模型通过元工具按需加载：
-    - list_packages：查看可用包
-    - load_package / unload_package：加载 / 卸载包
-    """
+    """内置工具 + 外置工具包的注册表。"""
 
     def __init__(
         self,
@@ -116,8 +38,7 @@ class ToolRegistry:
         self._prompts: dict[str, dict[str, Any]] = {}
         self._packages: dict[str, dict[str, Any]] = {}
         self._active_packages: set[str] = set()
-        self._modules: dict[str, ModuleType] = {}
-        self._instances: dict[str, Any] = {}
+        self._executor = ToolExecutor()
         self.memory_searcher = memory_searcher
         self.load_builtin()
         if packages_dir is not None:
@@ -234,7 +155,6 @@ class ToolRegistry:
         return f"已卸载 {package_id}"
 
     def restore_packages(self, target: list[str]) -> list[str]:
-        """把活动包还原到 target，返回发生变化的包 id。"""
         target_set = set(target)
         changed = []
         for package_id in list(self._active_packages):
@@ -269,7 +189,6 @@ class ToolRegistry:
         return entry.get("type") == "command" or bool(tool.get("requires_approval"))
 
     def system_prompt(self) -> str:
-        """生成系统消息：内置/外置提示词在前，按需加载指引在后。"""
         parts = []
         for prompt in self._prompts.values():
             parts.append(f"[{prompt['name']}]\n{prompt['content'].strip()}")
@@ -288,14 +207,14 @@ class ToolRegistry:
         if tool is None:
             return f"Unknown tool: {name}"
         try:
-            entry = _require_entry(tool)
+            entry = require_entry(tool)
         except ValueError as err:
             return str(err)
         entry_type = entry.get("type")
         if entry_type == "python":
-            return self._execute_python(tool, arguments)
+            return self._executor.execute_python(tool, arguments)
         if entry_type == "command":
-            return self._execute_command(tool, arguments)
+            return self._executor.execute_command(tool, arguments)
         return f"Unknown entry type: {entry_type if entry_type is not None else 'None'}"
 
     def _execute_meta(self, name: str, arguments: dict[str, Any]) -> str:
@@ -321,67 +240,3 @@ class ToolRegistry:
                 f"{package['id']}：{package['description']}（工具：{tools}；提示词：{prompts}；状态：{state}）"
             )
         return "\n".join(lines) or "暂无可用工具包"
-
-    def _execute_python(self, tool: Tool, arguments: dict[str, Any]) -> str:
-        try:
-            entry = _require_entry(tool)
-        except ValueError as err:
-            return str(err)
-        module = entry["module"]
-        module_path = Path(tool["package_dir"]) / module
-        module_name = "_".join(
-            ["_yuki_pkg", tool.get("package", "?"), module.removesuffix(".py")]
-        ).replace("/", "_").replace("\\", "_")
-        loaded = self._modules.get(module_name)
-        if loaded is None:
-            spec = importlib.util.spec_from_file_location(module_name, module_path)
-            if spec is None:
-                return f"无法加载模块：{module_path}"
-            loader = spec.loader
-            if loader is None:
-                return f"无法加载模块：{module_path}"
-            loaded = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = loaded
-            loader.exec_module(loaded)
-            self._modules[module_name] = loaded
-
-        handler = getattr(loaded, entry["handler"])
-        if isinstance(handler, type):
-            instance_key = f"{module_name}.{entry['handler']}"
-            instance = self._instances.get(instance_key)
-            if instance is None:
-                try:
-                    instance = handler()
-                except Exception as err:
-                    return f"工具执行失败：{err}"
-                self._instances[instance_key] = instance
-            method = entry.get("method", "run")
-            return _run_handler(getattr(instance, method, None), arguments)
-        return _run_handler(handler, arguments)
-
-    @staticmethod
-    def _execute_command(tool: Tool, arguments: dict[str, Any]) -> str:
-        try:
-            entry = _require_entry(tool)
-        except ValueError as err:
-            return str(err)
-        command = [
-            part.replace("{python}", sys.executable)
-            for part in entry["command"]
-        ]
-        try:
-            result = subprocess.run(
-                command,
-                cwd=tool["package_dir"],
-                input=json.dumps(arguments, ensure_ascii=False),
-                text=True,
-                capture_output=True,
-                timeout=30,
-            )
-        except subprocess.TimeoutExpired:
-            return "工具执行超时"
-        except Exception as err:
-            return f"工具执行失败：{err}"
-        if result.returncode != 0:
-            return f"工具执行失败：{result.stderr.strip() or result.stdout.strip()}"
-        return result.stdout.strip()

@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 from yuki.approver import cli_approver
 from yuki.cli import run
 from yuki_kernel.core.app import App
-from yuki_kernel.core.session import SessionStore
+from yuki_kernel.core.memory import SessionStore
 from yuki_kernel.skills.package_manager import PackageManager
 
 from yuki.settings import EXAMPLE_ROOT, load_settings

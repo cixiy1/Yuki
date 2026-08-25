@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from yuki_kernel.config import Settings
-from yuki_kernel.core.session import SessionStore
+from yuki_kernel.core.memory import SessionStore
 from yuki_kernel.providers import register_provider
 
 from tests.fake_provider import FakeProvider

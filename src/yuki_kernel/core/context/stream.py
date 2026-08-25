@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator
 
-from ..providers import ChatChunk
+from ...providers import ChatChunk
 
 THINK_TAGS = ("<think>", "</think>")
 
