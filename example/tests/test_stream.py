@@ -13,6 +13,12 @@ def test_content_filter_dedup():
     assert out == "纽约22°C。"
 
 
+def test_content_filter_removes_blank_lines():
+    content_filter = ContentFilter()
+    out = content_filter.feed("第一段。\n\n第二段。")
+    assert out == "第一段。第二段。"
+
+
 @pytest.mark.asyncio
 async def test_collect_stream():
     async def stream():

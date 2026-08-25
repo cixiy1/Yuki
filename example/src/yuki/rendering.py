@@ -37,8 +37,9 @@ class ContentFilter:
         return self._emit()
 
     def _emit(self) -> str:
-        sentences = split_sentences(self.buffer)
+        text = re.sub(r"\n{2,}", "\n", self.buffer)
         self.buffer = ""
+        sentences = split_sentences(text)
         emitted = []
         for sentence in sentences:
             key = sentence.strip()
@@ -47,12 +48,13 @@ class ContentFilter:
             if self.saw_think_tag and key == self.last_sentence:
                 continue
             self.last_sentence = key
-            emitted.append(sentence)
+            emitted.append(sentence.strip())
         return "".join(emitted)
 
 
 async def render_turn(app: App, line: str) -> None:
     state = "initial"
+    rendered = False
     content_filter = ContentFilter()
     thinking_filter = TagFilter()
 
@@ -70,22 +72,29 @@ async def render_turn(app: App, line: str) -> None:
             if text.strip():
                 switch_state("thinking", "思考：")
                 print(text, end="", flush=True)
+                rendered = True
         elif event.kind == "tool_calls":
             switch_state("tool_calling", "工具调用：")
             print(event.calls, end="", flush=True)
+            rendered = True
         elif event.kind == "content":
             text = content_filter.feed(event.text)
             if text:
                 switch_state("ans", "回答：")
                 print(text, end="", flush=True)
+                rendered = True
         elif event.kind == "tool_result":
             print(f"\n工具结果：{event.text}")
             state = "initial"
+            rendered = True
         elif event.kind == "package_restored":
             print(f"\n外置包已还原：{event.text}")
             state = "initial"
+            rendered = True
     tail = content_filter.finish()
     if tail:
         switch_state("ans", "回答：")
         print(tail, end="", flush=True)
-    print()
+        rendered = True
+    if rendered:
+        print()
