@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yuki"
+version = "0.1.0"
+description = "A small agent example with pluggable providers."
+requires-python = ">=3.11"
+dependencies = [
+    "ollama",
+    "openai",
+    "python-dotenv",
+    "json5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[project.scripts]
+yuki = "yuki.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

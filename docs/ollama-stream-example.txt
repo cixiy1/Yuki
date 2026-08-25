@@ -1,0 +1,31 @@
+# 当前使用的大模型名称及版本
+model='qwen3:8b'
+# 本条流式数据包的UTC生成时间
+created_at='2026-08-04T22:45:46.8705521Z'
+# 生成是否结束：False=生成进行中，True=本轮回答生成完毕
+done=False
+# 生成终止原因，未结束则为空；正常结束stop、超长截断length、异常中断为对应报错标识
+done_reason=None
+# 整轮对话从加载到生成完成的总耗时，未结束无数值
+total_duration=None
+# 本次模型加载耗时，热加载一般数值极小，未结束无数值
+load_duration=None
+# 输入提示词的token总数量
+prompt_eval_count=None
+# 提示词预处理、编码推理耗时
+prompt_eval_duration=None
+# 回答输出的token数量
+eval_count=None
+# 回答文本逐token生成耗时
+eval_duration=None
+# 本次返回的消息结构体
+message=Message(
+    role='assistant',                # 消息角色：assistant为AI助手
+    content='',                      # 对外展示的正文内容，当前分片为空
+    thinking='好的',                 # 模型内部思考过程内容
+    images=None,                     # 本轮无图片输入
+    tool_name=None,                  # 未指定调用工具
+    tool_calls=None                  # 无函数/工具调用请求
+)
+# 词汇概率日志，默认关闭，为空
+logprobs=None
