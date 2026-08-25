@@ -33,7 +33,7 @@ class Agent:
         registry: ToolRegistry,
         settings: Settings,
         session: Optional[Session] = None,
-        provider: Union[str, Provider] = "ollama",
+        provider: Union[str, Provider] = "openai",
         system_prompt: str = "",
         middlewares: Optional[list[Middleware]] = None,
         bus: Optional[EventBus] = None,

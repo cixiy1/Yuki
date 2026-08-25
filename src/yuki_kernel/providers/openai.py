@@ -1,13 +1,13 @@
-"""OpenAI 兼容 API provider。"""
+"""OpenAI 兼容 provider：内核内置，懒加载 SDK。"""
 
 import json
 from typing import Any, AsyncIterator, Mapping, Optional, Sequence, cast
 
-from yuki_kernel.config import Settings
-from yuki_kernel.providers.base import ChatChunk, Provider
+from ..config import Settings
+from .base import ChatChunk, Provider
 
 
-class ApiProvider(Provider):
+class OpenAIProvider(Provider):
     def __init__(
         self,
         model: str,
@@ -19,7 +19,7 @@ class ApiProvider(Provider):
         try:
             from openai import AsyncOpenAI
         except ImportError as err:
-            raise ImportError("ApiProvider 需要安装 openai，请先执行 pip install openai") from err
+            raise ImportError("OpenAIProvider 需要安装 openai") from err
         self.client = AsyncOpenAI(
             api_key=api_key or self.settings.openai_api_key,
             base_url=base_url or self.settings.openai_base_url,

@@ -1,13 +1,25 @@
-"""Provider 抽象与注册口：具体提供商由外部实现并注册。"""
+"""Provider 抽象、内置厂商与注册口。"""
 
 from typing import Callable
 
 from ..config import Settings
+from .anthropic import AnthropicProvider
 from .base import ChatChunk, Provider
+from .openai import OpenAIProvider
 
-__all__ = ["ChatChunk", "Provider", "register_provider", "create_provider"]
+__all__ = [
+    "AnthropicProvider",
+    "ChatChunk",
+    "OpenAIProvider",
+    "Provider",
+    "register_provider",
+    "create_provider",
+]
 
-_PROVIDERS: dict[str, Callable[[str, Settings], Provider]] = {}
+_PROVIDERS: dict[str, Callable[[str, Settings], Provider]] = {
+    "openai": OpenAIProvider,
+    "anthropic": AnthropicProvider,
+}
 
 
 def register_provider(name: str, factory: Callable[[str, Settings], Provider]) -> None:

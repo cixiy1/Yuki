@@ -17,7 +17,7 @@ async def main():
         settings.model,
         ToolRegistry(),
         settings,
-        provider="api",
+        provider="openai",
     )
     result = await agent.turn("你好，请用一句话介绍你自己。")
     print(result.content)

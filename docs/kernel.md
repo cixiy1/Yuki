@@ -71,9 +71,18 @@ asyncio.run(main())
 
 这个示例不联网，能直接跑通内核的最小闭环。
 
-## Provider 接入
+## Provider
 
-内核只定义抽象，不内置厂商。实现一个 Provider 需要完成两件事：
+内核内置两个厂商适配器，负责发送网络请求并转译成 `ChatChunk`：
+
+- `openai`：OpenAI 兼容接口
+- `anthropic`：Anthropic（完整支持文本、thinking、工具调用）
+
+SDK 懒加载：内核 import 不依赖 `openai` / `anthropic`，只有实例化对应 provider 时才导入。
+
+### 自定义厂商
+
+实现一个 Provider，把厂商格式转译成内核抽象：
 
 ```text
 # 假设厂商流式返回：{"choices": [{"delta": {"content": "你"}, "finish_reason": null}]}
@@ -121,10 +130,11 @@ agent = Agent(settings.model, registry, settings)
 
 真实转译参考：
 
-- OpenAI 兼容：[api.py](../src/yuki/providers/api.py)
-- Ollama：[ollama.py](../src/yuki/providers/ollama.py)
+- OpenAI 兼容：[openai.py](../src/yuki_kernel/providers/openai.py)
+- Anthropic：[anthropic.py](../src/yuki_kernel/providers/anthropic.py)
 
-转译发生在外部 provider，内核只消费统一的 `ChatChunk`。
+Anthropic 的工具消息格式是 `assistant.content[tool_use] + user.content[tool_result]`，
+与 OpenAI 的 `role=tool(tool_call_id)` 不同，内核内置实现已经分别处理。
 
 ## 完整对话调用
 
@@ -255,7 +265,7 @@ config_reload`。
 
 ```text
 settings = Settings(
-    provider="api",
+    provider="openai",
     model="glm-4.5-air",
     packages_dir=Path("/your/project/packages"),
     data_dir=Path("/your/project/data"),
@@ -266,8 +276,8 @@ settings = Settings(
 常用字段：
 
 - `think`：是否开启思考
-- `openai_base_url` / `openai_api_key`：API provider 参数
-- `ollama_host` / `ollama_port`：Ollama provider 参数
+- `openai_base_url` / `openai_api_key`：OpenAI provider 参数
+- `anthropic_base_url` / `anthropic_api_key`：Anthropic provider 参数
 - `packages` / `packages_preload`：外置包加载策略
 - `max_context_tokens` / `keep_recent_messages`：上下文预算
 - `memory_limit` / `namespace`：长期记忆

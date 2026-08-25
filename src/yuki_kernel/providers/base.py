@@ -39,7 +39,8 @@ class Provider(ABC):
     ) -> list[dict[str, Any]]:
         """把工具调用和结果构造成可继续对话的消息。"""
 
-    async def start(self) -> bool:
+    @staticmethod
+    async def start() -> bool:
         return True
 
     async def close(self, skip_unload: bool = False):

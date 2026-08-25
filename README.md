@@ -1,6 +1,6 @@
 # Yuki
 
-全异步 agent 内核：通过 provider 抽象支持 Ollama 和 OpenAI 兼容 API，内置会话持久化、
+全异步 agent 内核：通过 provider 抽象支持 OpenAI 兼容和 Anthropic，内置会话持久化、
 上下文摘要、中间件/事件、错误重试、审批、本地包管理和契约测试。
 
 工具系统支持内置工具函数、外置工具包和纯提示词包，外置包按需加载，
@@ -15,11 +15,11 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e .
 
-# 默认使用本地 Ollama
+# 默认使用 OpenAI 兼容接口
 yuki
 
 # 使用 OpenAI 兼容 API
-AGENT_PROVIDER=api 
+AGENT_PROVIDER=openai
 AGENT_MODEL=你的模型名 \
 OPENAI_API_KEY=你的密钥 
 OPENAI_BASE_URL=https://api.openai.com/v1 \
@@ -28,7 +28,7 @@ yuki
 
 未安装时可直接用源码运行：`PYTHONPATH=src python -m yuki`。
 
-`AGENT_PROVIDER` 可选 `ollama`、`api`；`AGENT_MODEL` 默认 `qwen3:8b`。
+`AGENT_PROVIDER` 可选 `openai`、`anthropic`；`AGENT_MODEL` 默认 `qwen3:8b`。
 
 CLI 斜杠命令：
 
@@ -55,8 +55,8 @@ src/
       policy/              # 审批等策略
     providers/             # Provider 抽象与实现
       base.py              # Provider / ChatChunk
-      ollama.py            # Ollama 本地服务与 provider
-      api.py               # OpenAI 兼容 API provider
+      openai.py            # OpenAI 兼容 provider
+      anthropic.py         # Anthropic provider
     skills/                # 工具注册与实现
       registry.py          # ToolRegistry：统一内置工具与外置包
       executor.py          # 工具执行器
@@ -70,7 +70,6 @@ src/
     __main__.py            # 入口与组装
     cli.py                 # 主循环
     commands/              # 斜杠命令分发
-    providers/             # Ollama / API provider 实现
     approver.py            # 审批交互
     rendering.py           # 渲染与清洗
     settings.py            # 环境变量 → Settings

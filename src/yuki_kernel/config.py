@@ -12,8 +12,8 @@ class Settings:
     think: bool = True
     openai_base_url: Optional[str] = None
     openai_api_key: Optional[str] = None
-    ollama_host: str = "127.0.0.1"
-    ollama_port: int = 11434
+    anthropic_base_url: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
     packages_dir: Optional[Path] = None
     packages: list[str] = field(default_factory=list)
     packages_preload: list[str] = field(default_factory=list)

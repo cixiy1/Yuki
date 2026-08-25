@@ -47,13 +47,13 @@ def load_settings() -> Settings:
     if load_dotenv is not None:
         load_dotenv(EXAMPLE_ROOT / ".env", override=True)
     return Settings(
-        provider=os.getenv("AGENT_PROVIDER", "ollama"),
+        provider=os.getenv("AGENT_PROVIDER", "openai"),
         model=os.getenv("AGENT_MODEL", "qwen3:8b"),
         think=_bool_env("AGENT_THINK", True),
         openai_base_url=os.getenv("OPENAI_BASE_URL") or None,
         openai_api_key=os.getenv("OPENAI_API_KEY") or None,
-        ollama_host=os.getenv("OLLAMA_HOST", "127.0.0.1"),
-        ollama_port=_int_env("OLLAMA_PORT", 11434),
+        anthropic_base_url=os.getenv("ANTHROPIC_BASE_URL") or None,
+        anthropic_api_key=os.getenv("ANTHROPIC_API_KEY") or None,
         packages_dir=_resolve_path(os.getenv("PACKAGES_DIR", ""), EXAMPLE_ROOT / "packages"),
         packages=_csv_env("AGENT_PACKAGES"),
         packages_preload=_csv_env("AGENT_PACKAGES_PRELOAD"),
