@@ -69,3 +69,9 @@ class MemoryStore:
                 [*params, limit],
             ).fetchall()
         return [MemoryHit(*row) for row in rows]
+
+    def search_text(self, query: str, limit: int = 5) -> str:
+        hits = self.search(query, limit)
+        if not hits:
+            return "没有找到相关记忆"
+        return "\n".join(f"- {hit.content}" for hit in hits)

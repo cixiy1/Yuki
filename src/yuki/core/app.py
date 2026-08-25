@@ -32,6 +32,10 @@ class App:
             self.settings.packages_dir,
             available=self.settings.packages or None,
             preload=self.settings.packages_preload,
+            memory_searcher=lambda query: self.memory_store.search_text(
+                query,
+                self.settings.memory_limit,
+            ),
         )
 
     def _build_agent(self) -> Agent:

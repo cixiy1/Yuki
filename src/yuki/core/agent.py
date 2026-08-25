@@ -17,8 +17,6 @@ from .tools import merge_tool_calls
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 
-HISTORY_KEYWORDS = ("前面", "之前", "历史", "上下文", "发了", "说过", "分号")
-
 
 class Agent:
     def __init__(
@@ -90,11 +88,7 @@ class Agent:
         if event.context.get("abort"):
             return
         self.memory.append({"role": "user", "content": user_message})
-        async for chunk in self._stream_with_hooks(
-            self.memory,
-            self.registry.tools,
-            query=user_message,
-        ):
+        async for chunk in self._stream_with_hooks(self.memory, self.registry.tools):
             yield chunk
 
     async def continue_with_tools(
@@ -111,40 +105,12 @@ class Agent:
         self,
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]],
-        query: Optional[str] = None,
     ) -> AsyncIterator[ChatChunk]:
-        messages = await self._with_memory(messages, query)
         await self._ensure_context_budget()
         await self._emit("before_model", {"messages": messages, "tools": tools})
         async for chunk in self._chat_with_retry(messages, tools=tools):
             await self._emit("assistant_chunk", chunk)
             yield chunk
-
-    async def _with_memory(
-        self,
-        messages: list[dict[str, Any]],
-        query: Optional[str],
-    ) -> list[dict[str, Any]]:
-        if (
-            self.memory_store is None
-            or not query
-            or any(keyword in query for keyword in HISTORY_KEYWORDS)
-        ):
-            return messages
-        hits = await asyncio.to_thread(
-            self.memory_store.search,
-            query,
-            self.settings.memory_limit,
-        )
-        if not hits:
-            return messages
-        block = "[长期记忆（历史会话，非当前对话）]\n" + "\n".join(
-            f"- {hit.content}" for hit in hits
-        )
-        extra = {"role": "system", "content": block}
-        if messages and messages[0].get("role") == "system":
-            return [messages[0], extra, *messages[1:]]
-        return [extra, *messages]
 
     async def remember(self, user_content: str, assistant_content: str) -> None:
         if self.memory_store is None:

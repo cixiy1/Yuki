@@ -15,7 +15,7 @@ from .types import Tool, ToolEntry
 PathLike = Union[str, Path]
 
 
-META_NAMES = {"list_packages", "load_package", "unload_package"}
+META_NAMES = {"list_packages", "load_package", "unload_package", "search_memory"}
 
 META_TOOLS = [
     {
@@ -47,6 +47,20 @@ META_TOOLS = [
                 "package_id": {
                     "type": "string",
                     "description": "外置工具包的 id",
+                }
+            },
+        },
+    },
+    {
+        "name": "search_memory",
+        "description": "按关键词检索长期记忆，返回历史会话中的相关信息",
+        "parameters": {
+            "type": "object",
+            "required": ["query"],
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "要检索的关键词",
                 }
             },
         },
@@ -96,6 +110,7 @@ class ToolRegistry:
         packages_dir: Optional[PathLike] = None,
         available: Optional[list[str]] = None,
         preload: Optional[list[str]] = None,
+        memory_searcher: Optional[Callable[[str], str]] = None,
     ):
         self._tools: dict[str, Tool] = {}
         self._prompts: dict[str, dict[str, Any]] = {}
@@ -103,6 +118,7 @@ class ToolRegistry:
         self._active_packages: set[str] = set()
         self._modules: dict[str, ModuleType] = {}
         self._instances: dict[str, Any] = {}
+        self.memory_searcher = memory_searcher
         self.load_builtin()
         if packages_dir is not None:
             self.scan_packages(Path(packages_dir), available=available)
@@ -289,6 +305,10 @@ class ToolRegistry:
             return self.activate_package(str(arguments.get("package_id", "")))
         if name == "unload_package":
             return self.deactivate_package(str(arguments.get("package_id", "")))
+        if name == "search_memory":
+            if self.memory_searcher is None:
+                return "长期记忆未启用"
+            return self.memory_searcher(str(arguments.get("query", "")))
         return f"Unknown meta tool: {name}"
 
     def _list_packages_text(self) -> str:
