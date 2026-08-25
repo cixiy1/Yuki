@@ -16,24 +16,6 @@ BUILTIN_TOOLS: list[Tool] = [
             "handler": "get_environment_info",
         },
     },
-    {
-        "name": "get_name",
-        "description": "查询某个人的家庭所在城市",
-        "parameters": {
-            "type": "object",
-            "required": ["name"],
-            "properties": {
-                "name": {
-                    "type": "string",
-                }
-            },
-        },
-        "entry": {
-            "type": "python",
-            "module": "builtins/people.py",
-            "handler": "get_name",
-        },
-    },
 ]
 
 BUILTIN_PROMPTS = [

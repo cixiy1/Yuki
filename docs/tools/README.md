@@ -68,7 +68,7 @@ packages/
 - `BUILTIN_TOOLS`：函数工具，`entry` 格式与外置包一致（支持 python 和 command 入口）。
 - `BUILTIN_PROMPTS`：内置提示词，`path` 指向 `builtins/prompts/` 下的 Markdown 文件。
 
-工具实现代码放在 `src/yuki/skills/builtins/`，例如 `people.py`。内置工具
+工具实现代码放在 `src/yuki/skills/builtins/`，例如 `environment.py`。内置工具
 始终在上下文中，不参与外置包的按需加载。
 
 ## 安全
