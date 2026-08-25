@@ -6,29 +6,13 @@ import subprocess
 import sys
 from types import ModuleType
 from pathlib import Path
-from typing import Any, Callable, Optional, TypedDict, Union, cast
+from typing import Any, Optional, Union, cast
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .external import discover_packages, load_package
+from .types import Tool, ToolEntry
 
 PathLike = Union[str, Path]
-
-
-class ToolEntry(TypedDict, total=False):
-    type: str
-    module: str
-    handler: str
-    method: str
-    command: list[str]
-
-
-class Tool(TypedDict, total=False):
-    name: str
-    description: str
-    parameters: dict[str, Any]
-    entry: ToolEntry
-    package: str
-    package_dir: str
 
 
 META_NAMES = {"list_packages", "load_package", "unload_package"}
@@ -92,7 +76,8 @@ def _require_entry(tool: Tool) -> ToolEntry:
 def _run_handler(handler: Any, arguments: dict[str, Any]) -> str:
     if not callable(handler):
         return "handler 不可调用"
-    return str(cast(Callable[..., Any], handler)(**arguments))
+    result = handler(**arguments)
+    return "" if result is None else str(result)
 
 
 class ToolRegistry:
@@ -153,9 +138,13 @@ class ToolRegistry:
         skills_dir = Path(__file__).resolve().parent
         for tool in BUILTIN_TOOLS:
             self.register_tool(
-                cast(
-                    Tool,
-                    {**tool, "package": "builtin", "package_dir": str(skills_dir)},
+                Tool(
+                    name=tool["name"],
+                    description=tool["description"],
+                    parameters=tool["parameters"],
+                    entry=tool["entry"],
+                    package="builtin",
+                    package_dir=str(skills_dir),
                 )
             )
         for prompt in BUILTIN_PROMPTS:
@@ -321,7 +310,7 @@ class ToolRegistry:
             loader = spec.loader
             if loader is None:
                 return f"无法加载模块：{module_path}"
-            loaded = cast(ModuleType, importlib.util.module_from_spec(spec))
+            loaded = importlib.util.module_from_spec(spec)
             sys.modules[module_name] = loaded
             loader.exec_module(loaded)
             self._modules[module_name] = loaded

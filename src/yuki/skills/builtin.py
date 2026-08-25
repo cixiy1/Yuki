@@ -1,6 +1,8 @@
 """内置工具注册表：只声明内置工具和提示词，具体实现放在 builtins/ 下。"""
 
-BUILTIN_TOOLS = [
+from .types import Tool
+
+BUILTIN_TOOLS: list[Tool] = [
     {
         "name": "get_name",
         "description": "查询某个人的家庭所在城市",
