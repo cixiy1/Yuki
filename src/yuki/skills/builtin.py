@@ -21,6 +21,15 @@ BUILTIN_TOOLS = [
     },
 ]
 
+# 示例：工具函数 + 使用说明提示词（未启用，避免内置提示词常驻占上下文）
+# 1. 在 builtins/prompts/ 下创建 get_name_guide.md
+# 2. 在 BUILTIN_PROMPTS 注册：
+# {
+#     "name": "get_name_guide",
+#     "description": "get_name 的使用注意事项",
+#     "path": "builtins/prompts/get_name_guide.md",
+# }
+
 BUILTIN_PROMPTS = [
     {
         "name": "builtin_identity",

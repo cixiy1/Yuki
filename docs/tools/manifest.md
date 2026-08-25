@@ -212,3 +212,35 @@ packages/
 | `path` | 相对 `src/yuki/skills/` 的 Markdown 文件路径 |
 
 内置提示词会被注入系统消息，与外置包的 `prompts` 行为一致。
+
+### 工具函数 + 使用说明提示词示例
+
+工具函数的使用说明可以独立成一个提示词，和工具配套注册，但内置提示词常驻上下文，
+建议只在需要时启用：
+
+```python
+BUILTIN_TOOLS = [
+    {
+        "name": "get_name",
+        "description": "查询某个人的家庭所在城市",
+        "parameters": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {"name": {"type": "string"}},
+        },
+        "entry": {
+            "type": "python",
+            "module": "builtins/people.py",
+            "handler": "get_name",
+        },
+    },
+]
+
+BUILTIN_PROMPTS = [
+    {
+        "name": "get_name_guide",
+        "description": "get_name 的使用注意事项",
+        "path": "builtins/prompts/get_name_guide.md",
+    },
+]
+```
