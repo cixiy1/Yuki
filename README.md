@@ -1,34 +1,49 @@
 # Yuki
 
-全异步 agent 内核：通过 provider 抽象支持 OpenAI 兼容和 Anthropic，内置会话持久化、
-上下文摘要、中间件/事件、错误重试、审批、本地包管理和契约测试。
+仓库包含两个独立项目：
 
-工具系统支持内置工具函数、外置工具包和纯提示词包，外置包按需加载，
-开发指南见 [docs/tools](docs/tools/README.md)。
+- `kernel/`：`yuki-kernel` 可嵌入 agent 内核，空白大脑，不含人格与业务。
+- `example/`：`yuki` 示例聊天外壳，基于内核实现，保留会话、包管理、审批、热加载。
 
-内核使用指南见 [docs/kernel.md](docs/kernel.md)。
+## 结构
 
-## 运行
+```text
+kernel/
+  pyproject.toml
+  src/yuki_kernel/         # 内核源码（events/memory/context/policy/providers/skills）
+  tests/                   # 内核契约测试
+example/
+  pyproject.toml
+  src/yuki/                # 示例聊天外壳
+  packages/                # 外置工具包目录
+  scripts/                 # 真实模型联调脚本
+  tests/                   # 示例测试
+docs/
+  kernel.md                # 内核使用指南
+  tools/                   # 工具系统开发指南
+```
+
+## 安装
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+pip install -e kernel
+pip install -e example
+```
 
-# 默认使用 OpenAI 兼容接口
-yuki
+## 运行示例
 
-# 使用 OpenAI 兼容 API
-AGENT_PROVIDER=openai
-AGENT_MODEL=你的模型名 \
-OPENAI_API_KEY=你的密钥 
-OPENAI_BASE_URL=https://api.openai.com/v1 \
+```bash
 yuki
 ```
 
-未安装时可直接用源码运行：`PYTHONPATH=src python -m yuki`。
+或直接用源码运行：
 
-`AGENT_PROVIDER` 可选 `openai`、`anthropic`；`AGENT_MODEL` 默认 `qwen3:8b`。
+```bash
+cd example
+PYTHONPATH=../kernel/src:src .venv/bin/python -m yuki
+```
+
+`AGENT_PROVIDER` 可选 `openai`、`anthropic`；配置见 `example/.env.example`。
 
 CLI 斜杠命令：
 
@@ -37,45 +52,9 @@ CLI 斜杠命令：
 /pkg install <目录|zip> /pkg remove <id> /pkg list
 ```
 
-测试：`PYTHONPATH=src .venv/bin/python -m pytest`（dev 依赖：`pytest`、`pytest-asyncio`）。
+## 测试
 
-## 结构
-
-```text
-src/
-  yuki_kernel/             # 可嵌入的 agent 内核
-    config.py              # Settings：环境变量配置与热加载
-    core/
-      agent.py             # Agent：异步闭环 + 摘要 + 审批 + 钩子
-      app.py               # 应用容器与热加载
-      errors.py            # 异常与重试判断
-      events/              # 事件类型、总线、中间件
-      memory/              # 会话、持久化、长期记忆
-      context/             # 上下文预算、流式收集
-      policy/              # 审批等策略
-    providers/             # Provider 抽象与实现
-      base.py              # Provider / ChatChunk
-      openai.py            # OpenAI 兼容 provider
-      anthropic.py         # Anthropic provider
-    skills/                # 工具注册与实现
-      registry.py          # ToolRegistry：统一内置工具与外置包
-      executor.py          # 工具执行器
-      meta.py              # 元工具定义
-      sources.py           # 包来源抽象
-      builtin.py           # 内置工具注册表
-      builtins/            # 内置工具实现
-      external.py          # 外置包发现与校验
-      package_manager.py   # 本地包安装/卸载/列表
-  yuki/                    # 示例 agent（聊天外壳）
-    __main__.py            # 入口与组装
-    cli.py                 # 主循环
-    commands/              # 斜杠命令分发
-    approver.py            # 审批交互
-    rendering.py           # 渲染与清洗
-    settings.py            # 环境变量 → Settings
-packages/                  # 外置工具包目录
-tests/                     # pytest 契约测试
-docs/
-  tools/                   # 工具系统开发指南
-pyproject.toml
+```bash
+cd kernel && PYTHONPATH=src ../.venv/bin/python -m pytest
+cd example && PYTHONPATH=../kernel/src:src ../.venv/bin/python -m pytest
 ```

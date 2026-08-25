@@ -192,10 +192,12 @@ def test_registry_builtin_and_custom():
     assert isinstance(create_provider("anthropic", "claude", settings), AnthropicProvider)
 
     class DummyProvider(Provider):
-        async def chat(self, messages, tools=None, **kwargs):
+        @staticmethod
+        async def chat(_messages, _tools=None, **_kwargs):
             return None
 
-        def build_tool_messages(self, tool_calls, results):
+        @staticmethod
+        def build_tool_messages(_tool_calls, _results):
             return []
 
     register_provider("dummy", DummyProvider)

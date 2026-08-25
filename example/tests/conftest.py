@@ -1,7 +1,4 @@
-"""测试共享 fixture。"""
-
-import shutil
-from pathlib import Path
+"""示例测试共享 fixture。"""
 
 import pytest
 
@@ -15,8 +12,6 @@ register_provider(
     "fake",
     lambda model, settings: FakeProvider(settings=settings, model=model),
 )
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture
@@ -37,10 +32,3 @@ def settings(tmp_path):
 def store(settings):
     assert settings.data_dir is not None
     return SessionStore(settings.data_dir)
-
-
-@pytest.fixture
-def example_packages(tmp_path):
-    dest = tmp_path / "packages"
-    shutil.copytree(PROJECT_ROOT / "packages", dest)
-    return dest

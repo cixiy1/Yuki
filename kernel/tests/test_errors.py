@@ -27,7 +27,7 @@ async def test_provider_retry(settings):
     assert fake.calls == 2
 
 
-def test_tool_error_returned(settings, tmp_path):
+def test_tool_error_returned(tmp_path):
     module_dir = tmp_path / "tools"
     module_dir.mkdir()
     (module_dir / "boom.py").write_text(

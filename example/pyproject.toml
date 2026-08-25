@@ -5,11 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "yuki"
 version = "0.1.0"
-description = "Yuki kernel: an embeddable agent kernel plus the Yuki chat example."
+description = "Yuki example agent built on yuki-kernel."
 requires-python = ">=3.11"
 dependencies = [
-    "anthropic",
-    "openai",
+    "yuki-kernel",
     "python-dotenv",
     "json5",
 ]

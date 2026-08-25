@@ -130,8 +130,8 @@ agent = Agent(settings.model, registry, settings)
 
 真实转译参考：
 
-- OpenAI 兼容：[openai.py](../src/yuki_kernel/providers/openai.py)
-- Anthropic：[anthropic.py](../src/yuki_kernel/providers/anthropic.py)
+- OpenAI 兼容：[openai.py](../kernel/src/yuki_kernel/providers/openai.py)
+- Anthropic：[anthropic.py](../kernel/src/yuki_kernel/providers/anthropic.py)
 
 Anthropic 的工具消息格式是 `assistant.content[tool_use] + user.content[tool_result]`，
 与 OpenAI 的 `role=tool(tool_call_id)` 不同，内核内置实现已经分别处理。
@@ -287,7 +287,7 @@ settings = Settings(
 
 ## 示例 agent：Yuki
 
-仓库里的 `src/yuki/` 是基于内核实现的聊天外壳，作为外部软件参考：
+仓库里的 `example/src/yuki/` 是基于内核实现的聊天外壳，作为外部软件参考：
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m yuki

@@ -1,6 +1,6 @@
 """脚本化 FakeProvider，用于契约测试。"""
 
-from typing import Any, AsyncIterator, Optional, Sequence
+from typing import Any, AsyncIterator
 
 from yuki_kernel.config import Settings
 from yuki_kernel.providers import ChatChunk, Provider
@@ -10,9 +10,9 @@ class FakeProvider(Provider):
     def __init__(
         self,
         settings: Settings,
-        script: Optional[list[list[ChatChunk]]] = None,
+        script: Any = None,
         model: str = "fake",
-        errors: Optional[list[Exception]] = None,
+        errors: Any = None,
     ):
         super().__init__(model, settings)
         self.script = list(script or [])
@@ -21,10 +21,11 @@ class FakeProvider(Provider):
 
     async def chat(
         self,
-        messages: Sequence[dict[str, Any]],
-        tools: Optional[Sequence[dict[str, Any]]] = None,
+        messages,
+        tools=None,
         **kwargs,
     ) -> AsyncIterator[ChatChunk]:
+        del messages, tools, kwargs
         if self.calls < len(self.errors):
             err = self.errors[self.calls]
             self.calls += 1
@@ -34,11 +35,11 @@ class FakeProvider(Provider):
         for chunk in chunks:
             yield chunk
 
+    @staticmethod
     def build_tool_messages(
-        self,
-        tool_calls: list[dict[str, Any]],
-        results: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
+        tool_calls,
+        results,
+    ):
         assistant = {
             "role": "assistant",
             "content": "",
@@ -47,7 +48,10 @@ class FakeProvider(Provider):
                 for call in tool_calls
             ],
         }
-        return [assistant, *[{"role": "tool", "content": r["content"]} for r in results]]
+        return [
+            assistant,
+            *[{"role": "tool", "content": r["content"]} for r in results],
+        ]
 
 
 def env_tool_call_chunk() -> ChatChunk:

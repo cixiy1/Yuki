@@ -18,7 +18,7 @@ def test_memory_search(tmp_path):
     assert any("纽约" in hit.content for hit in hits)
 
 
-def test_search_memory_tool(settings, tmp_path):
+def test_search_memory_tool(tmp_path):
     store = MemoryStore(tmp_path / "data")
     store.add("old", "用户：纽约天气\n助手：纽约22度")
     registry = ToolRegistry(
@@ -30,7 +30,7 @@ def test_search_memory_tool(settings, tmp_path):
     assert "纽约" in content
 
 
-def test_search_memory_disabled(tmp_path):
+def test_search_memory_disabled():
     registry = ToolRegistry(None)
     assert registry.execute("search_memory", {"query": "纽约"}) == "长期记忆未启用"
 
