@@ -2,6 +2,7 @@
 
 import asyncio
 
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
 
 from ..settings import load_settings

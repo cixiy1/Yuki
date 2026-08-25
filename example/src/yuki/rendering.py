@@ -2,8 +2,11 @@
 
 import re
 
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.context import TagFilter
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.context import clean_content
 
 SENTENCE_SPLIT = re.compile(r"(?<=[。！？!?])")

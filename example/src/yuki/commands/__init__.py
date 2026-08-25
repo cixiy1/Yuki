@@ -1,5 +1,6 @@
 """Yuki 斜杠命令分发入口。"""
 
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
 
 from .packages import handle_pkg

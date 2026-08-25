@@ -11,8 +11,11 @@ sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
 from yuki.approver import cli_approver
 from yuki.cli import run
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.memory import SessionStore
+# noinspection PyUnresolvedReferences
 from yuki_kernel.skills.package_manager import PackageManager
 
 from yuki.settings import EXAMPLE_ROOT, load_settings

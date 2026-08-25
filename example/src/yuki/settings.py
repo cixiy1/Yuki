@@ -8,6 +8,7 @@ try:
 except ImportError:
     load_dotenv = None
 
+# noinspection PyUnresolvedReferences
 from yuki_kernel.config import Settings
 
 EXAMPLE_ROOT = Path(__file__).resolve().parent.parent.parent

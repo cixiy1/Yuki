@@ -1,6 +1,8 @@
 """外置包管理命令。"""
 
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
+# noinspection PyUnresolvedReferences
 from yuki_kernel.skills.sources import LocalDirSource, ZipSource
 
 
