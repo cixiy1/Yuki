@@ -76,14 +76,26 @@ asyncio.run(main())
 内核只定义抽象，不内置厂商。实现一个 Provider 需要完成两件事：
 
 ```text
+# 假设厂商流式返回：{"choices": [{"delta": {"content": "你"}, "finish_reason": null}]}
 class MyProvider(Provider):
     def build_tool_messages(self, tool_calls, results):
-        # 把工具调用与结果构造成厂商要求的消息格式
-        return []
+        # 厂商要求 assistant.tool_calls + role=tool 的消息
+        return [
+            {"role": "assistant", "content": None, "tool_calls": tool_calls},
+            *[{"role": "tool", "content": result["content"]} for result in results],
+        ]
 
     async def chat(self, messages, tools=None, **kwargs):
-        # 调用模型，逐块 yield ChatChunk
-        yield ChatChunk(content="...")
+        # 调用厂商 SDK，把厂商的原始流逐块翻译成 ChatChunk
+        async for raw in self.vendor.stream(messages, tools):
+            choice = raw["choices"][0]
+            delta = choice["delta"]
+            yield ChatChunk(
+                thinking=delta.get("reasoning_content"),
+                content=delta.get("content"),
+                tool_calls=delta.get("tool_calls") or [],
+                done=bool(choice.get("finish_reason")),
+            )
 ```
 
 `ChatChunk` 字段：
@@ -106,6 +118,13 @@ agent = Agent(settings.model, registry, settings)
 ```
 
 重试、错误归一由内核在抽象层处理，Provider 不需要自己实现。
+
+真实转译参考：
+
+- OpenAI 兼容：[api.py](../src/yuki/providers/api.py)
+- Ollama：[ollama.py](../src/yuki/providers/ollama.py)
+
+转译发生在外部 provider，内核只消费统一的 `ChatChunk`。
 
 ## 完整对话调用
 
