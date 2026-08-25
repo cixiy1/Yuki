@@ -1,9 +1,13 @@
 """示例测试共享 fixture。"""
 
+# noinspection PyUnresolvedReferences
 import pytest
 
+# noinspection PyUnresolvedReferences
 from yuki_kernel.config import Settings
+# noinspection PyUnresolvedReferences
 from yuki_kernel.core.memory import SessionStore
+# noinspection PyUnresolvedReferences
 from yuki_kernel.providers import register_provider
 
 from tests.fake_provider import FakeProvider

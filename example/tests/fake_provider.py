@@ -2,7 +2,9 @@
 
 from typing import Any, AsyncIterator
 
+# noinspection PyUnresolvedReferences
 from yuki_kernel.config import Settings
+# noinspection PyUnresolvedReferences
 from yuki_kernel.providers import ChatChunk, Provider
 
 
