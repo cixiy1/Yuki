@@ -217,15 +217,15 @@ class ToolRegistry:
         self._prompts[name] = prompt
 
     def system_prompt(self) -> str:
-        """生成系统消息：按需加载指引 + 已加载外置包的提示词。"""
+        """生成系统消息：内置/外置提示词在前，按需加载指引在后。"""
         parts = []
+        for prompt in self._prompts.values():
+            parts.append(f"[{prompt['name']}]\n{prompt['content'].strip()}")
         if self._packages:
             parts.append(
                 "外置工具包按需加载：当现有工具无法满足用户需求时，"
                 "先调用 list_packages 查看可用包，再调用 load_package 加载对应包后继续。"
             )
-        for prompt in self._prompts.values():
-            parts.append(f"[{prompt['name']}]\n{prompt['content'].strip()}")
         return "\n\n".join(parts)
 
     def execute(self, name: str, arguments: dict[str, Any]) -> str:
