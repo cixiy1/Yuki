@@ -236,7 +236,10 @@ class ToolRegistry:
         if tool is None:
             return f"Unknown tool: {name}"
         if "entry" not in tool:
-            return str(tool["handler"](**arguments))
+            handler = tool.get("handler")
+            if not callable(handler):
+                return f"工具 {name} 缺少可调用的 handler"
+            return str(handler(**arguments))
 
         entry = tool["entry"]
         if entry["type"] == "python":
@@ -274,19 +277,23 @@ class ToolRegistry:
         module = self._modules.get(module_name)
         if module is None:
             spec = importlib.util.spec_from_file_location(module_name, module_path)
-            if spec is None or spec.loader is None:
+            if spec is None:
+                return f"无法加载模块：{module_path}"
+            loader = spec.loader
+            if loader is None:
                 return f"无法加载模块：{module_path}"
             module = importlib.util.module_from_spec(spec)
             sys.modules[module_name] = module
-            spec.loader.exec_module(module)
+            loader.exec_module(module)
             self._modules[module_name] = module
 
         handler = getattr(module, entry["handler"], None)
-        if handler is None:
+        if not callable(handler):
             return f"模块 {module_path} 中找不到函数：{entry['handler']}"
         return str(handler(**arguments))
 
-    def _execute_command(self, tool: dict[str, Any], arguments: dict[str, Any]) -> str:
+    @staticmethod
+    def _execute_command(tool: dict[str, Any], arguments: dict[str, Any]) -> str:
         entry = tool["entry"]
         command = [part.replace("{python}", sys.executable) for part in entry["command"]]
         try:
