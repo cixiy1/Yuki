@@ -236,13 +236,14 @@ class ToolRegistry:
         if tool is None:
             return f"Unknown tool: {name}"
         entry = tool.get("entry")
-        if entry is None:
+        if not isinstance(entry, dict):
             return f"工具 {name} 缺少执行入口"
-        if entry["type"] == "python":
+        entry_type = entry.get("type")
+        if entry_type == "python":
             return self._execute_python(tool, arguments)
-        if entry["type"] == "command":
+        if entry_type == "command":
             return self._execute_command(tool, arguments)
-        return f"Unknown entry type: {entry['type']}"
+        return f"Unknown entry type: {entry_type}"
 
     def _execute_meta(self, name: str, arguments: dict[str, Any]) -> str:
         if name == "list_packages":
@@ -265,34 +266,45 @@ class ToolRegistry:
         return "\n".join(lines) or "暂无可用工具包"
 
     def _execute_python(self, tool: dict[str, Any], arguments: dict[str, Any]) -> str:
-        entry = tool["entry"]
-        module_path = Path(tool["package_dir"]) / entry["module"]
+        entry = tool.get("entry")
+        if not isinstance(entry, dict):
+            return "模块加载失败：缺少执行入口"
+        module = entry.get("module") or ""
+        module_path = Path(tool["package_dir"]) / module
         module_name = "_".join(
-            ["_yuki_pkg", tool["package"], entry["module"].removesuffix(".py")]
+            ["_yuki_pkg", tool.get("package", "?"), module.removesuffix(".py")]
         ).replace("/", "_").replace("\\", "_")
-        module = self._modules.get(module_name)
-        if module is None:
+        loaded = self._modules.get(module_name)
+        if loaded is None:
             spec = importlib.util.spec_from_file_location(module_name, module_path)
             if spec is None:
                 return f"无法加载模块：{module_path}"
             loader = spec.loader
             if loader is None:
                 return f"无法加载模块：{module_path}"
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = module
-            loader.exec_module(module)
-            self._modules[module_name] = module
+            loaded = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = loaded
+            loader.exec_module(loaded)
+            self._modules[module_name] = loaded
 
+        handler_name = entry.get("handler")
+        if not handler_name:
+            return f"模块 {module_path} 缺少 handler 字段"
         try:
-            handler = getattr(module, entry["handler"])
+            handler = getattr(loaded, handler_name)
         except AttributeError:
-            return f"模块 {module_path} 中找不到函数：{entry['handler']}"
+            return f"模块 {module_path} 中找不到函数：{handler_name}"
         return str(handler(**arguments))
 
     @staticmethod
     def _execute_command(tool: dict[str, Any], arguments: dict[str, Any]) -> str:
-        entry = tool["entry"]
-        command = [part.replace("{python}", sys.executable) for part in entry["command"]]
+        entry = tool.get("entry")
+        if not isinstance(entry, dict):
+            return "工具执行失败：缺少执行入口"
+        command = [
+            part.replace("{python}", sys.executable)
+            for part in (entry.get("command") or [])
+        ]
         try:
             result = subprocess.run(
                 command,
