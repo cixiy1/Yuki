@@ -25,8 +25,9 @@ def _terms(text: str) -> list[str]:
 
 
 class MemoryStore:
-    def __init__(self, data_dir: Path):
+    def __init__(self, data_dir: Path, namespace: str = "default"):
         self.data_dir = data_dir
+        self.namespace = namespace
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.db_path = data_dir / "memory.db"
         with sqlite3.connect(self.db_path) as conn:
@@ -40,6 +41,11 @@ class MemoryStore:
                 )
                 """
             )
+            columns = [row[1] for row in conn.execute("PRAGMA table_info(memories)")]
+            if "namespace" not in columns:
+                conn.execute(
+                    "ALTER TABLE memories ADD COLUMN namespace TEXT NOT NULL DEFAULT 'default'"
+                )
 
     def add(self, session_id: str, content: str) -> None:
         if not content.strip():
@@ -47,8 +53,11 @@ class MemoryStore:
         created_at = datetime.now().isoformat(timespec="seconds")
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "INSERT INTO memories (session_id, content, created_at) VALUES (?, ?, ?)",
-                (session_id, content, created_at),
+                """
+                INSERT INTO memories (session_id, content, created_at, namespace)
+                VALUES (?, ?, ?, ?)
+                """,
+                (session_id, content, created_at, self.namespace),
             )
 
     def search(self, query: str, limit: int = 5) -> list[MemoryHit]:
@@ -62,11 +71,11 @@ class MemoryStore:
                 f"""
                 SELECT session_id, content, created_at
                 FROM memories
-                WHERE {placeholders}
+                WHERE namespace = ? AND ({placeholders})
                 ORDER BY id DESC
                 LIMIT ?
                 """,
-                [*params, limit],
+                [self.namespace, *params, limit],
             ).fetchall()
         return [MemoryHit(*row) for row in rows]
 

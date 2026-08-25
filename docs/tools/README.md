@@ -41,6 +41,7 @@ packages/
 | `AGENT_MAX_CONTEXT_TOKENS`   | `12000`    | 上下文预算，超限时压缩旧消息                                 |
 | `AGENT_KEEP_RECENT_MESSAGES` | `10`       | 摘要时保留的最近消息条数                                     |
 | `AGENT_MEMORY_LIMIT`         | `5`        | 每次请求注入的长期记忆条数                                   |
+| `AGENT_NAMESPACE`            | `default`  | 长期记忆命名空间，每个机器人/软件一个                        |
 | `AGENT_RETRY_MAX`            | `3`        | provider 瞬时错误最大重试次数                                |
 | `AGENT_RETRY_BASE`           | `0.5`      | 重试退避基数（秒）                                           |
 | `DATA_DIR`                   | `data`     | 会话 JSONL 与 SQLite 索引目录                                |
@@ -90,3 +91,4 @@ packages/
 
 每轮对话结束后，用户问题和回答会自动写入 `data/memory.db`；上下文压缩生成的摘要
 也会写入。模型需要历史信息时，调用 `search_memory` 工具按关键词检索，不自动注入。
+不同 `AGENT_NAMESPACE` 的记忆相互隔离，适合多个机器人共用同一个内核。

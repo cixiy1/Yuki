@@ -7,7 +7,7 @@ from yuki.providers import ChatChunk
 from yuki.skills import ToolRegistry
 from yuki.core.agent import Agent
 
-from tests.fake_provider import FakeProvider
+from tests.fake_provider import FakeProvider, env_tool_call_chunk
 
 
 @pytest.mark.asyncio
@@ -15,20 +15,7 @@ async def test_tool_loop(settings):
     registry = ToolRegistry(None)
     fake = FakeProvider(
         script=[
-            [
-                ChatChunk(
-                    tool_calls=[
-                        {
-                            "index": 0,
-                            "id": "call_1",
-                            "function": {
-                                "name": "get_environment_info",
-                                "arguments": "{}",
-                            },
-                        }
-                    ]
-                )
-            ],
+            [env_tool_call_chunk()],
             [ChatChunk(content="环境信息已返回。"), ChatChunk(done=True)],
         ],
         settings=settings,

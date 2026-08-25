@@ -20,11 +20,6 @@ BUILTIN_TOOLS: list[Tool] = [
 
 BUILTIN_PROMPTS = [
     {
-        "name": "builtin_identity",
-        "description": "Yuki 的基础身份说明",
-        "path": "builtins/prompts/identity.md",
-    },
-    {
         "name": "environment_guide",
         "description": "命令生成前的环境信息使用提示",
         "path": "builtins/prompts/environment_guide.md",

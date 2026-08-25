@@ -94,6 +94,21 @@ class SessionStore:
                 (session.session_id, session.name, session.created_at, session.updated_at),
             )
 
+    @staticmethod
+    def export(session: Session, path: Path) -> None:
+        """把会话消息导出成 JSONL 文件。"""
+        lines = [json.dumps(msg, ensure_ascii=False) for msg in session.messages]
+        path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+
+    @staticmethod
+    def import_file(path: Path, name: str = "") -> Session:
+        """从 JSONL 文件导入会话消息。"""
+        messages: list[dict[str, Any]] = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                messages.append(json.loads(line))
+        return Session(name=name, messages=messages)
+
     def load(self, session_id: str) -> Optional[Session]:
         path = self.sessions_dir / f"{session_id}.jsonl"
         if not path.exists():

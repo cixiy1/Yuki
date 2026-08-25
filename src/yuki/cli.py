@@ -1,35 +1,15 @@
 """异步命令行交互循环。"""
 
 import asyncio
-import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Optional
 
 from .core.app import App
+from .core.stream import clean_content, split_sentences
 from .providers import ChatChunk
 from .skills.package_manager import LocalDirSource, ZipSource
 
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
-
-THINK_TAGS = ("<think>", "</think>")
-SENTENCE_SPLIT = re.compile(r"(?<=[。！？!?])")
-
-
-def clean_content(text: str, pending: str) -> tuple[str, str, bool]:
-    """去掉内容流里的 think 标签，返回清理文本、待续标签、是否出现过标签。"""
-    combined = pending + text
-    saw_tag = any(tag in combined for tag in THINK_TAGS)
-    for tag in THINK_TAGS:
-        combined = combined.replace(tag, "")
-    for tag in THINK_TAGS:
-        for size in range(len(tag) - 1, 0, -1):
-            if combined.endswith(tag[:size]):
-                return combined[:-size], combined[-size:], saw_tag
-    return combined, "", saw_tag
-
-
-def split_sentences(text: str) -> list[str]:
-    return [part for part in SENTENCE_SPLIT.split(text) if part]
 
 
 @dataclass

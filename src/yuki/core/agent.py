@@ -2,6 +2,7 @@
 
 import asyncio
 import math
+from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Union
 
 from ..config import Settings
@@ -13,9 +14,18 @@ from .events import AgentEvent
 from .memory import MemoryStore
 from .middleware import Middleware, run_after, run_before
 from .session import Session
+from .stream import collect_stream
 from .tools import merge_tool_calls
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
+
+
+@dataclass
+class TurnResult:
+    thinking: str = ""
+    content: str = ""
+    tool_calls: list[Any] = field(default_factory=list)
+    changed_packages: list[str] = field(default_factory=list)
 
 
 class Agent:
@@ -100,6 +110,32 @@ class Agent:
         self.memory.extend(self.provider.build_tool_messages(calls, results))
         async for chunk in self._stream_with_hooks(self.memory, self.registry.tools):
             yield chunk
+
+    async def turn(self, user_message: str) -> TurnResult:
+        """无头完整对话回合：工具循环、包还原、记忆写入都在内核内完成。"""
+        active_packages = self.registry.active_packages
+        collected = await collect_stream(self.send_message(user_message))
+        tool_calls = collected.tool_calls
+        all_calls = list(tool_calls)
+        while tool_calls:
+            results = await self.execute_tool_calls(tool_calls)
+            next_collected = await collect_stream(
+                self.continue_with_tools(tool_calls, results)
+            )
+            collected.content += next_collected.content
+            collected.thinking += next_collected.thinking
+            tool_calls = next_collected.tool_calls
+            all_calls.extend(tool_calls)
+        changed = await self.restore_packages(active_packages)
+        if collected.content:
+            self.memory.append({"role": "assistant", "content": collected.content})
+            await self.remember(user_message, collected.content)
+        return TurnResult(
+            thinking=collected.thinking,
+            content=collected.content,
+            tool_calls=all_calls,
+            changed_packages=changed,
+        )
 
     async def _stream_with_hooks(
         self,

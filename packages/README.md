@@ -8,5 +8,6 @@
 - `weather/`：python 工具 + 提示词
 - `echo/`：command 命令工具
 - `writing_style/`：纯提示词包
+- `yuki_persona/`：Yuki 身份人格包（内核本身不携带身份）
 
 完整字段说明和开发规范见 [docs/tools/manifest.md](../docs/tools/manifest.md)。

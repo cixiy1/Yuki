@@ -48,3 +48,18 @@ class FakeProvider(Provider):
             ],
         }
         return [assistant, *[{"role": "tool", "content": r["content"]} for r in results]]
+
+
+def env_tool_call_chunk() -> ChatChunk:
+    return ChatChunk(
+        tool_calls=[
+            {
+                "index": 0,
+                "id": "call_1",
+                "function": {
+                    "name": "get_environment_info",
+                    "arguments": "{}",
+                },
+            }
+        ]
+    )

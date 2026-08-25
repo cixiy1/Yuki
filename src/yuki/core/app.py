@@ -22,7 +22,7 @@ class App:
         self.store = store
         self.package_manager = package_manager
         self.approver = approver
-        self.memory_store = MemoryStore(settings.data_dir)
+        self.memory_store = MemoryStore(settings.data_dir, namespace=settings.namespace)
         self.session: Session = store.create()
         self.registry = self._build_registry()
         self.agent = self._build_agent()
