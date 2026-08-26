@@ -49,6 +49,7 @@ class ToolRegistry:
         self._active_packages: set[str] = set()
         self._executor = ToolExecutor()
         self.memory_searcher = memory_searcher
+        self.package_scan = PackageScan()
         self.load_builtin()
         if packages_dir is not None:
             self.scan_packages(Path(packages_dir), available=available)
@@ -106,7 +107,8 @@ class ToolRegistry:
         available: Optional[list[str]] = None,
     ) -> PackageScan:
         if not packages_dir.is_dir():
-            return PackageScan(skipped=[(str(packages_dir), "目录不存在")])
+            self.package_scan = PackageScan(skipped=[(str(packages_dir), "目录不存在")])
+            return self.package_scan
 
         packages: dict[str, dict[str, Any]] = {}
         skipped: list[tuple[str, str]] = []
@@ -125,7 +127,8 @@ class ToolRegistry:
                 if package_id in allowed
             }
         self._packages = packages
-        return PackageScan(packages=packages, skipped=skipped)
+        self.package_scan = PackageScan(packages=packages, skipped=skipped)
+        return self.package_scan
 
     def activate_package(self, package_id: str) -> str:
         if package_id in self._active_packages:
