@@ -3,12 +3,6 @@
 import os
 from pathlib import Path
 
-try:
-    # noinspection PyUnresolvedReferences
-    from dotenv import load_dotenv
-except ImportError:
-    load_dotenv = None
-
 # noinspection PyUnresolvedReferences
 from yuki_kernel.config import Settings
 
@@ -45,9 +39,17 @@ def _resolve_path(value: str, default: Path) -> Path:
     return path if path.is_absolute() else EXAMPLE_ROOT / path
 
 
+def _load_dotenv() -> None:
+    try:
+        # noinspection PyUnresolvedReferences
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    load_dotenv(EXAMPLE_ROOT / ".env", override=True)
+
+
 def load_settings() -> Settings:
-    if load_dotenv is not None:
-        load_dotenv(EXAMPLE_ROOT / ".env", override=True)
+    _load_dotenv()
     return Settings(
         provider=os.getenv("AGENT_PROVIDER", "openai"),
         model=os.getenv("AGENT_MODEL", "glm-4-flash"),
