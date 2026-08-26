@@ -120,7 +120,7 @@ async def test_repeated_tool_calls_stop_early(settings):
     assert any(kind == "warning" for kind, text in events)
     assert any(
         message.get("role") == "system"
-        and "直接调用包内具体工具" in message.get("content", "")
+        and "已临时加载可用外置包" in message.get("content", "")
         for message in agent.memory
     )
     assert any(
@@ -171,6 +171,11 @@ async def test_repeated_meta_call_recovers_to_real_tool(settings, weather_packag
     assert any("22°C" in text for text in results)
     assert "纽约 22°C。" in content
     assert registry.active_packages == []
+    assert any(
+        message.get("role") == "system"
+        and "weather" in message.get("content", "")
+        for message in agent.memory
+    )
 
 
 @pytest.mark.asyncio
@@ -186,6 +191,6 @@ async def test_tool_loop_is_bounded(settings):
     async for event in agent.turn_stream("一直调用工具"):
         events.append((event.kind, event.text))
 
-    assert provider.tool_calls == settings.max_tool_rounds + 1
+    assert provider.tool_calls == 4
     assert any(kind == "content" and "最终回答" in text for kind, text in events)
     assert any(kind == "warning" for kind, text in events)
