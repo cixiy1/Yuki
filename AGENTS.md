@@ -58,16 +58,18 @@ PYCHARM_VM_OPTIONS="$PWD/.pycharm-inspect.vmoptions" \
 
 默认不推送，只有明确要求时才推送。
 
-## 内核分支与 main
+## 分支与 main
 
-- `kernel` 分支是 `main` 去掉 `example` 的精简分支，根结构与 `main` 相同（`kernel/` 与 `main` 同路径），支持普通 `git merge`。
-- 内核相关改动（`kernel/` 源码与 `docs/kernel.md`）先在 `kernel` 分支修改并提交，再合并进 `main`；不要直接在 `main` 上改内核。
-- 内核改动在 `kernel` 分支提交后，合并回 `main`：
+- 所有代码、文档、配置变更都先在分支开发并提交，不在 `main` 直接提交；`main` 只接受合并。
+- 内核相关改动（`kernel/` 源码与 `docs/kernel.md`）在 `kernel` 分支开发，合并用：
 
 ```bash
 git merge -s ort -Xno-renames kernel
 ```
 
+- 内核改动先在 `kernel` 分支跑 kernel 测试，合并回 `main` 后必须再跑 example 测试。
+- 示例、文档、AGENTS.md 等其余改动开普通分支（如 `codex/*`）开发，用普通 merge 合回 `main`。
+- `kernel` 分支是 `main` 去掉 `example` 的精简分支，根结构与 `main` 相同（`kernel/` 与 `main` 同路径），支持普通 `git merge`。
 - 该合并会保留 `main` 的 `example/`。不要用 GitHub 默认 PR 合并这个分支，rename 检测会误报冲突。
 - `main` 的 `kernel/` 更新后，需要从 `main` 去掉 `example` 重新生成 `kernel` 分支。
 
@@ -97,7 +99,8 @@ git merge -s ort -Xno-renames kernel
 ## 文档维护
 
 - 项目文档（README、docs/、AGENTS.md）要经常维护更新。
-- 功能、配置或接口变更后，必须同步更新对应文档，不能只改代码。
+- 功能、配置、接口或流程规则变更后，必须同步更新对应文档，不能只改代码。
+- 文档变更提交前同样跑测试和 PyCharm 无头检查，不得跳过。
 
 ## 工作区注意事项
 
