@@ -1,12 +1,8 @@
 """Yuki 示例：从环境变量构建内核 Settings。"""
 
+import importlib.util
 import os
 from pathlib import Path
-
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    load_dotenv = None
 
 # noinspection PyUnresolvedReferences
 from yuki_kernel.config import Settings
@@ -45,7 +41,9 @@ def _resolve_path(value: str, default: Path) -> Path:
 
 
 def load_settings() -> Settings:
-    if load_dotenv is not None:
+    if importlib.util.find_spec("dotenv") is not None:
+        from dotenv import load_dotenv
+
         load_dotenv(EXAMPLE_ROOT / ".env", override=True)
     return Settings(
         provider=os.getenv("AGENT_PROVIDER", "openai"),
