@@ -59,6 +59,7 @@ PYCHARM_VM_OPTIONS="$PWD/.pycharm-inspect.vmoptions" \
 ## 内核分支与 main
 
 - `kernel` 分支是 `main` 去掉 `example` 的精简分支，根结构与 `main` 相同（`kernel/` 与 `main` 同路径），支持普通 `git merge`。
+- 内核相关改动（`kernel/` 源码与 `docs/kernel.md`）先在 `kernel` 分支修改并提交，再合并进 `main`；不要直接在 `main` 上改内核。
 - 内核改动在 `kernel` 分支提交后，合并回 `main`：
 
 ```bash
