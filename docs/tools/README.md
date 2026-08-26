@@ -4,13 +4,13 @@ Yuki 支持三类工具能力：
 
 | 类型         | 说明                                                                    | 位置                                |
 | ------------ | ----------------------------------------------------------------------- | ----------------------------------- |
-| 内置工具函数 | 随代码分发，声明在 `builtin.py`，实现在 `builtins/`                     | `src/yuki_kernel/skills/builtin.py` |
-| 外置工具包   | 独立文件夹，通过 `manifest.json` 声明工具，入口可以是 Python 代码或命令 | `packages/`                         |
-| 纯提示词包   | 只有提示词，没有可执行代码，提示词注入系统消息                          | `packages/`                         |
+| 内置工具函数 | 随代码分发，声明在 `builtin.py`，实现在 `builtins/`                     | `kernel/src/yuki_kernel/skills/builtin.py` |
+| 外置工具包   | 独立文件夹，通过 `manifest.json` 声明工具，入口可以是 Python 代码或命令 | `example/packages/`                         |
+| 纯提示词包   | 只有提示词，没有可执行代码，提示词注入系统消息                          | `example/packages/`                         |
 
 ## 快速开始
 
-把包目录放进 `packages/`，启动时自动加载：
+把包目录放进 `example/packages/`，启动时自动加载：
 
 ```bash
 yuki
@@ -23,7 +23,7 @@ yuki
 当前目录已有三个示例包：
 
 ```text
-packages/
+example/packages/
   weather/          # python 工具 + 提示词
   echo/             # command 命令工具
   writing_style/    # 纯提示词包
@@ -64,12 +64,12 @@ packages/
 
 ## 内置工具
 
-内置工具不经过 `packages/`，注册表写在 `src/yuki_kernel/skills/builtin.py`：
+内置工具不经过 `example/packages/`，注册表写在 `kernel/src/yuki_kernel/skills/builtin.py`：
 
 - `BUILTIN_TOOLS`：函数工具，`entry` 格式与外置包一致（支持 python 和 command 入口）。
 - `BUILTIN_PROMPTS`：内置提示词，`path` 指向 `builtins/prompts/` 下的 Markdown 文件。
 
-工具实现代码放在 `src/yuki_kernel/skills/builtins/`，例如 `environment.py`。内置工具
+工具实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`，例如 `environment.py`。内置工具
 始终在上下文中，不参与外置包的按需加载。
 
 ## 安全

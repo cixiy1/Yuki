@@ -6,7 +6,7 @@ agent 启动时读取它，真正执行工具时才加载代码。
 ## 目录约定
 
 ```text
-packages/
+example/packages/
   <package_id>/
     manifest.json
     tool.py            # 可选：python 入口
@@ -219,8 +219,8 @@ class Greeter:
 
 ## 内置工具
 
-内置工具不需要 manifest，注册表写在 `src/yuki_kernel/skills/builtin.py`，
-实现代码放在 `src/yuki_kernel/skills/builtins/`。
+内置工具不需要 manifest，注册表写在 `kernel/src/yuki_kernel/skills/builtin.py`，
+实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`。
 
 `BUILTIN_TOOLS` 里的工具结构与外置包一致：
 
@@ -237,7 +237,7 @@ class Greeter:
 | ------------- | --------------------------------------------------- |
 | `name`        | 提示词名                                            |
 | `description` | 提示词描述                                          |
-| `path`        | 相对 `src/yuki_kernel/skills/` 的 Markdown 文件路径 |
+| `path`        | 相对 `kernel/src/yuki_kernel/skills/` 的 Markdown 文件路径 |
 
 内置提示词会被注入系统消息，与外置包的 `prompts` 行为一致。
 
