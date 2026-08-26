@@ -172,7 +172,7 @@ class Agent:
             self.memory.append(
                 {
                     "role": "system",
-                    "content": "已达到最大工具调用轮次，请基于已有结果直接回答用户，不要再调用工具。",
+                    "content": "已达到最大工具调用轮次，请检查是否陷入死循环。",
                 }
             )
             async for event in consume(
