@@ -162,6 +162,14 @@ class ToolRegistry:
         prompt_names = "、".join(prompt["name"] for prompt in package["prompts"]) or "无"
         return f"已加载 {package_id}：工具 {tool_names}；提示词 {prompt_names}"
 
+    def activate_available_packages(self) -> list[str]:
+        loaded = []
+        for package_id in self._packages:
+            if package_id not in self._active_packages:
+                self.activate_package(package_id)
+                loaded.append(package_id)
+        return loaded
+
     def deactivate_package(self, package_id: str) -> str:
         if package_id not in self._active_packages:
             return f"{package_id} 未加载"

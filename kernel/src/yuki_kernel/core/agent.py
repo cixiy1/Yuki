@@ -37,12 +37,13 @@ def _forced_answer_prompt(
     )
 
 
-def _repeat_hint_prompt(user_message: str) -> str:
+def _recovery_prompt(user_message: str, loaded: list[str]) -> str:
+    names = "、".join(loaded) or "无"
     return (
-        "检测到重复工具调用，停止重复同一个调用。\n"
+        f"检测到重复工具调用。已临时加载可用外置包：{names}。\n"
         f"用户刚才的问题是：{user_message}\n"
-        "如果用户要求的能力来自可用外置包，直接调用包内具体工具；"
-        "未加载的可用工具会自动加载。如果确实没有可用的工具，再直接回答。"
+        "请直接调用包内具体工具，不要再重复查看或加载包；"
+        "如果确实没有可用的工具，再直接回答。"
     )
 
 
@@ -185,7 +186,7 @@ class Agent:
         tool_calls: list[Any] = []
         all_calls: list[Any] = []
         executed_names: list[str] = []
-        previous_signature: list[tuple[str, str]] = []
+        seen_signatures: set[tuple[tuple[str, str], ...]] = set()
         repeated_count = 0
         latest_results: list[dict[str, Any]] = []
         async for event in consume(self.send_message(user_message), tool_calls):
@@ -194,53 +195,56 @@ class Agent:
         for _ in range(self.settings.max_tool_rounds):
             if not tool_calls:
                 break
-            signature = sorted(
-                (
-                    call["name"],
-                    json.dumps(call.get("arguments", {}), sort_keys=True, ensure_ascii=False),
+            signature = tuple(
+                sorted(
+                    (
+                        call["name"],
+                        json.dumps(call.get("arguments", {}), sort_keys=True, ensure_ascii=False),
+                    )
+                    for call in merge_tool_calls(tool_calls)
                 )
-                for call in merge_tool_calls(tool_calls)
             )
-            if signature == previous_signature:
+            if signature in seen_signatures:
                 repeated_count += 1
-                if repeated_count < 2:
+                if repeated_count > 1:
+                    summary = "\n".join(result["content"] for result in latest_results)
                     self.memory.append(
                         {
                             "role": "system",
-                            "content": _repeat_hint_prompt(user_message),
+                            "content": _forced_answer_prompt(
+                                user_message,
+                                summary,
+                                "重复工具调用后停止。",
+                                executed_names,
+                            ),
                         }
                     )
                     async for event in consume(
-                        self._stream_with_hooks(self.memory, self.registry.tools),
+                        self._stream_with_hooks(self.memory, tools=None),
                         tool_calls,
                     ):
                         yield event
-                    all_calls.extend(tool_calls)
-                    continue
-                summary = "\n".join(result["content"] for result in latest_results)
+                    yield StreamEvent(
+                        kind="warning",
+                        text="模型重复工具调用后被迫停止，可能未实际执行请求的工具。",
+                    )
+                    break
+                loaded = self.registry.activate_available_packages()
                 self.memory.append(
                     {
                         "role": "system",
-                        "content": _forced_answer_prompt(
-                            user_message,
-                            summary,
-                            "连续重复工具调用后停止。",
-                            executed_names,
-                        ),
+                        "content": _recovery_prompt(user_message, loaded),
                     }
                 )
                 async for event in consume(
-                    self._stream_with_hooks(self.memory, tools=None),
+                    self._stream_with_hooks(self.memory, self.registry.tools),
                     tool_calls,
                 ):
                     yield event
-                yield StreamEvent(
-                    kind="warning",
-                    text="模型连续重复工具调用后被迫停止，可能未实际执行请求的工具。",
-                )
-                break
+                all_calls.extend(tool_calls)
+                continue
+            seen_signatures.add(signature)
             repeated_count = 0
-            previous_signature = signature
             results = await self.execute_tool_calls(tool_calls)
             executed_names.extend(call["name"] for call in merge_tool_calls(tool_calls))
             latest_results = results
