@@ -13,7 +13,8 @@ from yuki_kernel.providers import ChatChunk
 # noinspection PyUnresolvedReferences
 from yuki_kernel.skills.package_manager import PackageManager
 
-from tests.fake_provider import FakeProvider
+# noinspection PyUnresolvedReferences
+from yuki_kernel.testing import FakeProvider
 
 
 @pytest.mark.asyncio

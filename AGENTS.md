@@ -35,7 +35,7 @@ cp -R "$HOME/Library/Application Support/JetBrains/PyCharm2026.2" /tmp/pycharm-c
 find /tmp/pycharm-config-yuki -name '*.lock' -delete
 PYCHARM_VM_OPTIONS="$PWD/.pycharm-inspect.vmoptions" \
   /Applications/it/ide/PyCharm.app/Contents/bin/inspect.sh \
-  "$PWD" Default /tmp/yuki-inspect \
+  "$PWD" "Project Default" /tmp/yuki-inspect \
   -d "$PWD/kernel/src" \
   -d "$PWD/kernel/tests" \
   -d "$PWD/example/src" \

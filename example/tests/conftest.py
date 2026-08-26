@@ -8,14 +8,9 @@ from yuki_kernel.config import Settings
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.memory import SessionStore
 # noinspection PyUnresolvedReferences
-from yuki_kernel.providers import register_provider
+from yuki_kernel.testing import make_weather_package, register_fake_provider
 
-from tests.fake_provider import FakeProvider
-
-register_provider(
-    "fake",
-    lambda model, settings: FakeProvider(settings=settings, model=model),
-)
+register_fake_provider()
 
 
 @pytest.fixture
@@ -36,3 +31,10 @@ def settings(tmp_path):
 def store(settings):
     assert settings.data_dir is not None
     return SessionStore(settings.data_dir)
+
+
+@pytest.fixture
+def weather_package(tmp_path):
+    dest = tmp_path / "source"
+    make_weather_package(dest)
+    return dest
