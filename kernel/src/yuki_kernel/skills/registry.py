@@ -1,5 +1,6 @@
 """工具注册表：统一内置工具与外置工具包的 schema 与执行。"""
 
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Optional, Union, cast
 
@@ -10,6 +11,14 @@ from .meta import META_NAMES, META_TOOLS
 from .types import Tool
 
 PathLike = Union[str, Path]
+
+
+@dataclass
+class PackageScan:
+    """包扫描结果，供客户端决定如何展示。"""
+
+    packages: dict[str, dict[str, Any]] = field(default_factory=dict)
+    skipped: list[tuple[str, str]] = field(default_factory=list)
 
 
 def to_function_schema(tool: Tool) -> dict[str, Any]:
@@ -40,11 +49,12 @@ class ToolRegistry:
         self._active_packages: set[str] = set()
         self._executor = ToolExecutor()
         self.memory_searcher = memory_searcher
+        self.preload_results: list[str] = []
         self.load_builtin()
         if packages_dir is not None:
             self.scan_packages(Path(packages_dir), available=available)
         for package_id in preload or []:
-            print(self.activate_package(package_id))
+            self.preload_results.append(self.activate_package(package_id))
 
     @property
     def tools(self) -> list[dict[str, Any]]:
@@ -91,19 +101,22 @@ class ToolRegistry:
             content = (skills_dir / prompt["path"]).read_text(encoding="utf-8")
             self.register_prompt({**prompt, "content": content})
 
-    def scan_packages(self, packages_dir: Path, available: Optional[list[str]] = None) -> None:
+    def scan_packages(
+        self,
+        packages_dir: Path,
+        available: Optional[list[str]] = None,
+    ) -> PackageScan:
         if not packages_dir.is_dir():
-            print(f"外置工具包目录不存在：{packages_dir}")
-            return
+            return PackageScan(skipped=[(str(packages_dir), "目录不存在")])
 
         packages: dict[str, dict[str, Any]] = {}
+        skipped: list[tuple[str, str]] = []
         for package_dir in discover_packages(packages_dir):
             try:
                 package = load_package(package_dir)
                 packages[package["id"]] = package
-                print(f"发现外置工具包：{package['id']}")
             except Exception as err:
-                print(f"跳过外置工具包 {package_dir.name}：{err}")
+                skipped.append((package_dir.name, str(err)))
 
         if available is not None:
             allowed = set(available)
@@ -113,10 +126,7 @@ class ToolRegistry:
                 if package_id in allowed
             }
         self._packages = packages
-        if packages:
-            print(f"可用外置工具包：{'、'.join(packages)}")
-        else:
-            print("可用外置工具包：无")
+        return PackageScan(packages=packages, skipped=skipped)
 
     def activate_package(self, package_id: str) -> str:
         if package_id in self._active_packages:

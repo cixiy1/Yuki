@@ -3,10 +3,12 @@
 import pytest
 
 from yuki_kernel.core.agent import Agent
+from yuki_kernel.core.app import App
 from yuki_kernel.core.memory import MemoryStore
 from yuki_kernel.core.memory import Session
 from yuki_kernel.core.memory import SessionStore
 from yuki_kernel.providers import ChatChunk
+from yuki_kernel.skills.package_manager import PackageManager
 from yuki_kernel.skills import ToolRegistry
 
 from tests.fake_provider import FakeProvider, env_tool_call_chunk
@@ -38,6 +40,16 @@ async def test_agent_turn(settings, tmp_path):
     assert any(
         "看看环境" in hit.content for hit in store.search("看看环境", 5)
     )
+
+
+@pytest.mark.asyncio
+async def test_app_reload_closes_old_provider(settings, store, tmp_path):
+    app = App(settings, store, PackageManager(tmp_path / "packages"))
+    old_provider = app.agent.provider
+
+    await app.reload(settings)
+
+    assert old_provider.closed
 
 
 def test_memory_namespace_isolated(tmp_path):

@@ -55,6 +55,7 @@ class App:
         )
 
     async def reload(self, settings: Settings) -> None:
+        old_agent = self.agent
         self.settings = settings
         self.memory_store = (
             MemoryStore(self.settings.data_dir, namespace=self.settings.namespace)
@@ -63,3 +64,4 @@ class App:
         )
         self.registry = self._build_registry()
         self.agent = self._build_agent()
+        await old_agent.provider.close()

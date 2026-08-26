@@ -17,3 +17,31 @@ def test_environment_info_available():
     content = registry.execute("get_environment_info", {})
     assert "操作系统" in content
     assert "Python" in content
+
+
+def test_scan_packages_returns_data_without_printing(weather_package, capsys):
+    registry = ToolRegistry(None)
+
+    scan = registry.scan_packages(weather_package)
+
+    assert "weather" in scan.packages
+    assert scan.skipped == []
+    assert capsys.readouterr().out == ""
+
+
+def test_scan_packages_missing_dir(tmp_path, capsys):
+    registry = ToolRegistry(None)
+
+    scan = registry.scan_packages(tmp_path / "nope")
+
+    assert scan.packages == {}
+    assert scan.skipped == [(str(tmp_path / "nope"), "目录不存在")]
+    assert capsys.readouterr().out == ""
+
+
+def test_preload_collects_results_without_printing(weather_package, capsys):
+    registry = ToolRegistry(weather_package, preload=["weather"])
+
+    assert registry.preload_results
+    assert "已加载 weather" in registry.preload_results[0]
+    assert capsys.readouterr().out == ""
