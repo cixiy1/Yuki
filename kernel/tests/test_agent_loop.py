@@ -82,6 +82,10 @@ async def test_repeated_tool_calls_stop_early(settings):
 
     assert provider.tool_calls == 2
     assert any(kind == "content" and "最终回答" in text for kind, text in events)
+    assert any(
+        message.get("role") == "system" and "最近一次工具结果" in message.get("content", "")
+        for message in agent.memory
+    )
 
 
 @pytest.mark.asyncio

@@ -155,6 +155,7 @@ class Agent:
         tool_calls: list[Any] = []
         all_calls: list[Any] = []
         previous_signature: list[tuple[str, str]] = []
+        latest_results: list[dict[str, Any]] = []
         async for event in consume(self.send_message(user_message), tool_calls):
             yield event
         all_calls.extend(tool_calls)
@@ -169,10 +170,15 @@ class Agent:
                 for call in merge_tool_calls(tool_calls)
             )
             if signature == previous_signature:
+                summary = "\n".join(result["content"] for result in latest_results)
                 self.memory.append(
                     {
                         "role": "system",
-                        "content": "检测到重复工具调用，请直接基于已有结果回答用户，不要再调用工具。",
+                        "content": (
+                            "检测到重复工具调用，最近一次工具结果如下，"
+                            "请直接据此回答用户刚才的问题，不要提问或继续调用工具：\n"
+                            + summary
+                        ),
                     }
                 )
                 async for event in consume(
@@ -183,6 +189,7 @@ class Agent:
                 break
             previous_signature = signature
             results = await self.execute_tool_calls(tool_calls)
+            latest_results = results
             for result in results:
                 yield StreamEvent(kind="tool_result", text=result["content"])
             async for event in consume(
@@ -192,10 +199,16 @@ class Agent:
                 yield event
             all_calls.extend(tool_calls)
         else:
+            summary = "\n".join(result["content"] for result in latest_results)
             self.memory.append(
                 {
                     "role": "system",
-                    "content": "已达到最大工具调用轮次，请检查是否陷入死循环，并直接基于已有结果回答用户，不要再调用工具。",
+                    "content": (
+                        "已达到最大工具调用轮次，请检查是否陷入死循环。"
+                        "最近一次工具结果如下，请直接据此回答用户刚才的问题，"
+                        "不要提问或继续调用工具：\n"
+                        + summary
+                    ),
                 }
             )
             async for event in consume(
