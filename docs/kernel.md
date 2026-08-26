@@ -50,6 +50,7 @@
 关键点：
 
 - 工具闭环、上下文压缩、审批、包还原、记忆写入全部在内核内完成，外部软件不用自己做。
+- 工具闭环有轮次上限（`max_tool_rounds`）：模型持续请求工具时会停止循环，注入提示并强制它直接回答，避免死循环。
 - `turn_stream()` 发的是**原始事件**，不做渲染清洗；think 标签可能出现在事件里，由外壳决定怎么显示。
 - 模型调用失败时内核按 `retry_max` 指数退避重试，工具异常会被转成字符串结果回喂模型，不让调用方崩溃。
 
@@ -415,7 +416,7 @@ finally:
 
 ```text
 new_settings = load_settings()   # 外部软件重新构造 Settings
-await app.reload(new_settings)   # 重建 registry / agent / memory_store，保留当前会话
+await app.reload(new_settings)   # 重建 registry / agent / memory_store，保留当前会话并关闭旧 provider
 ```
 
 ### 6.2 方式二：`Agent.turn()` / `turn_stream()`（推荐）
@@ -504,6 +505,12 @@ registry = ToolRegistry(
 )
 ```
 
+内核扫描与加载不打印任何内容，相关数据通过注册表暴露给外部软件：
+
+- `scan_packages()` 返回 `PackageScan`（`packages` 为发现的包，`skipped` 为跳过原因），并同时存入 `registry.package_scan`。
+- `registry.available_packages` 返回结构化包列表（`id / name / description / tools / prompts / loaded`）。
+- 预加载的包在 `available_packages` 中 `loaded=True`；展示由外部软件负责。
+
 注册表自带内置工具和提示词：
 
 - `get_environment_info`：获取操作系统、Python 版本、工作目录等环境信息。
@@ -567,6 +574,8 @@ manifest 完整格式见 [docs/tools/manifest.md](tools/manifest.md)。
 - `list_packages`：列出可用外置包
 - `load_package` / `unload_package`：加载/卸载
 - `search_memory`：检索长期记忆
+
+包扫描结果通过 `registry.package_scan` 暴露给外部软件（`packages` 为发现的包，`skipped` 为跳过原因），展示由外部软件负责。
 
 ### 7.4 审批
 
@@ -757,6 +766,7 @@ settings = Settings(
 | `namespace` | 否 | 长期记忆命名空间，默认 default |
 | `retry_max` | 否 | 模型调用重试次数，默认 3 |
 | `retry_base` | 否 | 重试退避基数（秒），默认 0.5 |
+| `max_tool_rounds` | 否 | 单轮最多连续工具调用次数，默认 16；超限后注入提示并强制模型直接回答 |
 | `data_dir` | 否 | 会话与长期记忆数据目录 |
 
 内核不读取环境变量，`Settings` 必须由外部软件构造。
