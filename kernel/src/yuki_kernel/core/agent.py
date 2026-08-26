@@ -112,10 +112,17 @@ class Agent:
         tool_calls: list[Any],
         results: list[dict[str, Any]],
     ) -> AsyncIterator[ChatChunk]:
-        calls = merge_tool_calls(tool_calls)
-        self.memory.extend(self.provider.build_tool_messages(calls, results))
+        self._append_tool_messages(tool_calls, results)
         async for chunk in self._stream_with_hooks(self.memory, self.registry.tools):
             yield chunk
+
+    def _append_tool_messages(
+        self,
+        tool_calls: list[Any],
+        results: list[dict[str, Any]],
+    ) -> None:
+        calls = merge_tool_calls(tool_calls)
+        self.memory.extend(self.provider.build_tool_messages(calls, results))
 
     async def turn(self, user_message: str) -> TurnResult:
         """无头完整对话回合，等价于收集 turn_stream 的事件。"""
@@ -158,8 +165,9 @@ class Agent:
             results = await self.execute_tool_calls(tool_calls)
             for result in results:
                 yield StreamEvent(kind="tool_result", text=result["content"])
+            self._append_tool_messages(tool_calls, results)
             async for event in consume(
-                self.continue_with_tools(tool_calls, results),
+                self._stream_with_hooks(self.memory, self.registry.tools),
                 tool_calls,
             ):
                 yield event
