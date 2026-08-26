@@ -18,6 +18,7 @@ class PackageScan:
     """包扫描结果，供客户端决定如何展示。"""
 
     packages: dict[str, dict[str, Any]] = field(default_factory=dict)
+    available: dict[str, dict[str, Any]] = field(default_factory=dict)
     skipped: list[tuple[str, str]] = field(default_factory=list)
 
 
@@ -110,24 +111,30 @@ class ToolRegistry:
             self.package_scan = PackageScan(skipped=[(str(packages_dir), "目录不存在")])
             return self.package_scan
 
-        packages: dict[str, dict[str, Any]] = {}
+        discovered: dict[str, dict[str, Any]] = {}
         skipped: list[tuple[str, str]] = []
         for package_dir in discover_packages(packages_dir):
             try:
                 package = load_package(package_dir)
-                packages[package["id"]] = package
+                discovered[package["id"]] = package
             except Exception as err:
                 skipped.append((package_dir.name, str(err)))
 
         if available is not None:
             allowed = set(available)
-            packages = {
+            usable = {
                 package_id: package
-                for package_id, package in packages.items()
+                for package_id, package in discovered.items()
                 if package_id in allowed
             }
-        self._packages = packages
-        self.package_scan = PackageScan(packages=packages, skipped=skipped)
+        else:
+            usable = dict(discovered)
+        self._packages = usable
+        self.package_scan = PackageScan(
+            packages=discovered,
+            available=usable,
+            skipped=skipped,
+        )
         return self.package_scan
 
     def activate_package(self, package_id: str) -> str:
