@@ -49,12 +49,11 @@ class ToolRegistry:
         self._active_packages: set[str] = set()
         self._executor = ToolExecutor()
         self.memory_searcher = memory_searcher
-        self.preload_results: list[str] = []
         self.load_builtin()
         if packages_dir is not None:
             self.scan_packages(Path(packages_dir), available=available)
         for package_id in preload or []:
-            self.preload_results.append(self.activate_package(package_id))
+            self.activate_package(package_id)
 
     @property
     def tools(self) -> list[dict[str, Any]]:

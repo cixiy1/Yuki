@@ -39,9 +39,9 @@ def test_scan_packages_missing_dir(tmp_path, capsys):
     assert capsys.readouterr().out == ""
 
 
-def test_preload_collects_results_without_printing(weather_package, capsys):
+def test_preload_updates_available_packages_without_printing(weather_package, capsys):
     registry = ToolRegistry(weather_package, preload=["weather"])
 
-    assert registry.preload_results
-    assert "已加载 weather" in registry.preload_results[0]
+    loaded = [package for package in registry.available_packages if package["loaded"]]
+    assert [package["id"] for package in loaded] == ["weather"]
     assert capsys.readouterr().out == ""
