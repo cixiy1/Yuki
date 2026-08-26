@@ -5,7 +5,7 @@
   "description": "给内核注入 Yuki 身份的后天记忆示例",
   "prompts": [
     {
-      "name": "builtin_identity",
+      "name": "yuki_identity",
       "description": "Yuki 的基础身份说明",
       "path": "skill.md"
     }

@@ -54,7 +54,7 @@ class Agent:
             self.provider = provider
         else:
             self.provider = create_provider(provider, model, settings)
-        self._approval = ApprovalGate(self.registry, lambda: self.session, approver)
+        self._approval = ApprovalGate(self.registry, lambda: self.session, lambda: self.approver)
         self._context = ContextManager(
             settings,
             lambda: self.memory,
@@ -199,7 +199,7 @@ class Agent:
             event = await self._emit("tool_call", call)
             if event.context.get("abort"):
                 content = "用户已中止"
-            elif not await self._approval.check(call["name"]):
+            elif not await self._approval.check(call["name"], call["arguments"]):
                 content = "用户拒绝执行"
             else:
                 content = await asyncio.to_thread(

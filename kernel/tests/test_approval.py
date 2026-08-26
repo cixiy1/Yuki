@@ -13,7 +13,7 @@ def _registry(tmp_path):
     module_dir = tmp_path / "tools"
     module_dir.mkdir(exist_ok=True)
     (module_dir / "danger.py").write_text(
-        "def run():\n    return 'ok'\n",
+        "def run(path=None):\n    return 'ok'\n",
         encoding="utf-8",
     )
     registry = ToolRegistry(None)
@@ -21,7 +21,10 @@ def _registry(tmp_path):
         Tool(
             name="danger",
             description="危险工具",
-            parameters={"type": "object", "properties": {}},
+            parameters={
+                "type": "object",
+                "properties": {"path": {"type": "string"}},
+            },
             requires_approval=True,
             entry={
                 "type": "python",
@@ -101,3 +104,52 @@ async def test_approve_denied(settings, tmp_path):
         [{"function": {"name": "danger", "arguments": {}}}]
     )
     assert results[0]["content"] == "用户拒绝执行"
+
+
+@pytest.mark.asyncio
+async def test_approver_receives_real_arguments(settings, tmp_path):
+    received = {}
+
+    async def approver(name, arguments):
+        received["name"] = name
+        received["arguments"] = arguments
+        return "y"
+
+    agent = Agent(
+        "fake",
+        _registry(tmp_path),
+        settings,
+        provider=FakeProvider(settings=settings),
+        approver=approver,
+    )
+    await agent.execute_tool_calls(
+        [{"function": {"name": "danger", "arguments": {"path": "/etc"}}}]
+    )
+    assert received == {"name": "danger", "arguments": {"path": "/etc"}}
+
+
+@pytest.mark.asyncio
+async def test_approver_can_be_swapped_after_construction(settings, tmp_path):
+    received = []
+
+    async def approver(name, arguments):
+        received.append((name, arguments))
+        return "y"
+
+    agent = Agent(
+        "fake",
+        _registry(tmp_path),
+        settings,
+        provider=FakeProvider(settings=settings),
+    )
+    denied = await agent.execute_tool_calls(
+        [{"function": {"name": "danger", "arguments": {"path": "/etc"}}}]
+    )
+    assert denied[0]["content"] == "用户拒绝执行"
+
+    agent.approver = approver
+    approved = await agent.execute_tool_calls(
+        [{"function": {"name": "danger", "arguments": {"path": "/etc"}}}]
+    )
+    assert approved[0]["content"] == "ok"
+    assert received == [("danger", {"path": "/etc"})]

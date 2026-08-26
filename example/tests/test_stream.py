@@ -1,19 +1,30 @@
-"""流式清洗与无头收集契约。"""
+"""流式渲染与无头收集契约。"""
 
 # noinspection PyUnresolvedReferences
 import pytest
 
-from yuki.rendering import ContentFilter
+from yuki.rendering import render_turn
+# noinspection PyUnresolvedReferences
+from yuki_kernel.core.app import App
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.context import collect_stream
 # noinspection PyUnresolvedReferences
 from yuki_kernel.providers import ChatChunk
+# noinspection PyUnresolvedReferences
+from yuki_kernel.skills.package_manager import PackageManager
+
+from tests.fake_provider import FakeProvider
 
 
-def test_content_filter_dedup():
-    content_filter = ContentFilter()
-    out = content_filter.feed("纽约22°C。</think>纽约22°C。")
-    assert out == "纽约22°C。"
+@pytest.mark.asyncio
+async def test_render_turn_keeps_original_content(settings, store, tmp_path, capsys):
+    app = App(settings, store, PackageManager(tmp_path / "packages"))
+    app.agent.provider = FakeProvider(
+        script=[[ChatChunk(content="纽约22°C。</think>纽约22°C。"), ChatChunk(done=True)]],
+        settings=settings,
+    )
+    await render_turn(app, "纽约天气")
+    assert "纽约22°C。</think>纽约22°C。" in capsys.readouterr().out
 
 
 @pytest.mark.asyncio

@@ -6,6 +6,7 @@ from ...skills import ToolRegistry
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 SessionProvider = Callable[[], Any]
+ApproverProvider = Callable[[], Optional[Approver]]
 
 
 class ApprovalGate:
@@ -13,21 +14,26 @@ class ApprovalGate:
         self,
         registry: ToolRegistry,
         session_provider: SessionProvider,
-        approver: Optional[Approver],
+        approver_provider: ApproverProvider,
     ):
         self.registry = registry
         self.session_provider = session_provider
-        self.approver = approver
+        self._approver_provider = approver_provider
 
-    async def check(self, name: str) -> bool:
+    async def check(
+        self,
+        name: str,
+        arguments: Optional[dict[str, Any]] = None,
+    ) -> bool:
         if not self.registry.needs_approval(name):
             return True
         session = self.session_provider()
         if session.is_approved(name):
             return True
-        if self.approver is None:
+        approver = self._approver_provider()
+        if approver is None:
             return False
-        answer = (await self.approver(name, {})).strip()
+        answer = (await approver(name, arguments or {})).strip()
         if answer == "ya":
             session.approve(name)
             return True
