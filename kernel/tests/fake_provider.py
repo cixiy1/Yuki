@@ -18,6 +18,10 @@ class FakeProvider(Provider):
         self.script = list(script or [])
         self.errors = list(errors or [])
         self.calls = 0
+        self.closed = False
+
+    async def close(self, skip_unload: bool = False):
+        self.closed = True
 
     async def chat(
         self,
