@@ -1,6 +1,7 @@
 """Agent：异步会话闭环，包含重试、摘要、审批与钩子。"""
 
 import asyncio
+import json
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Union
 
@@ -153,12 +154,34 @@ class Agent:
 
         tool_calls: list[Any] = []
         all_calls: list[Any] = []
+        previous_signature: list[tuple[str, str]] = []
         async for event in consume(self.send_message(user_message), tool_calls):
             yield event
         all_calls.extend(tool_calls)
         for _ in range(self.settings.max_tool_rounds):
             if not tool_calls:
                 break
+            signature = sorted(
+                (
+                    call["name"],
+                    json.dumps(call.get("arguments", {}), sort_keys=True, ensure_ascii=False),
+                )
+                for call in merge_tool_calls(tool_calls)
+            )
+            if signature == previous_signature:
+                self.memory.append(
+                    {
+                        "role": "system",
+                        "content": "检测到重复工具调用，请直接基于已有结果回答用户，不要再调用工具。",
+                    }
+                )
+                async for event in consume(
+                    self._stream_with_hooks(self.memory, tools=None),
+                    tool_calls,
+                ):
+                    yield event
+                break
+            previous_signature = signature
             results = await self.execute_tool_calls(tool_calls)
             for result in results:
                 yield StreamEvent(kind="tool_result", text=result["content"])
@@ -172,7 +195,7 @@ class Agent:
             self.memory.append(
                 {
                     "role": "system",
-                    "content": "已达到最大工具调用轮次，请检查是否陷入死循环。",
+                    "content": "已达到最大工具调用轮次，请检查是否陷入死循环，并直接基于已有结果回答用户，不要再调用工具。",
                 }
             )
             async for event in consume(

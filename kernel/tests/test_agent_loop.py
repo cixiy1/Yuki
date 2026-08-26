@@ -35,9 +35,10 @@ async def test_turn_stream_tool_loop(settings):
 
 
 class _LoopProvider(Provider):
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, names: list[str]):
         super().__init__("loop", settings)
         self.tool_calls = 0
+        self.names = names
 
     async def chat(self, messages, tools=None, **kwargs):
         del messages, kwargs
@@ -45,14 +46,15 @@ class _LoopProvider(Provider):
             yield ChatChunk(content="最终回答")
             yield ChatChunk(done=True)
             return
+        name = self.names[self.tool_calls % len(self.names)]
         self.tool_calls += 1
         yield ChatChunk(
             tool_calls=[
                 {
                     "index": 0,
-                    "id": "call_loop",
+                    "id": f"call_{self.tool_calls}",
                     "function": {
-                        "name": "get_environment_info",
+                        "name": name,
                         "arguments": "{}",
                     },
                 }
@@ -69,9 +71,26 @@ class _LoopProvider(Provider):
 
 
 @pytest.mark.asyncio
-async def test_tool_loop_is_bounded(settings, tmp_path):
+async def test_repeated_tool_calls_stop_early(settings):
     registry = ToolRegistry(None)
-    provider = _LoopProvider(settings)
+    provider = _LoopProvider(settings, names=["get_environment_info"])
+    agent = Agent("loop", registry, settings, provider=provider)
+
+    events = []
+    async for event in agent.turn_stream("一直调用工具"):
+        events.append((event.kind, event.text))
+
+    assert provider.tool_calls == 2
+    assert any(kind == "content" and "最终回答" in text for kind, text in events)
+
+
+@pytest.mark.asyncio
+async def test_tool_loop_is_bounded(settings):
+    registry = ToolRegistry(None)
+    provider = _LoopProvider(
+        settings,
+        names=["get_environment_info", "list_packages"],
+    )
     agent = Agent("loop", registry, settings, provider=provider)
 
     events = []
