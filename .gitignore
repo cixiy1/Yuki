@@ -14,6 +14,9 @@ MANIFEST
 *.egg
 wheelhouse/
 
+# uv 锁文件（IDE 自动生成）
+uv.lock
+
 # 虚拟环境
 .venv/
 venv/
