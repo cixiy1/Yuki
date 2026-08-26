@@ -21,6 +21,8 @@ yuki
 `unload_package` 卸载。可以用 `AGENT_PACKAGES_PRELOAD` 让某些包启动时就加载。
 系统提示会明确告诉模型：当前工具列表没有对应能力时，先调用
 `list_packages` 查看可调用的外置包，不要直接断言工具不存在。
+example 默认预加载 `yuki_persona` 与 `echo`，身份和回声工具开箱可用，
+其余包仍由模型按需加载。
 
 当前目录已有三个示例包：
 
