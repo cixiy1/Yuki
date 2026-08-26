@@ -46,8 +46,11 @@ async def main():
     store = SessionStore(settings.data_dir)
     package_manager = PackageManager(settings.packages_dir)
     app = App(settings, store, package_manager, approver=cli_approver)
-    for line in app.registry.preload_results:
-        print(line)
+    for package in app.registry.available_packages:
+        if package["loaded"]:
+            tools = "、".join(package["tools"]) or "无"
+            prompts = "、".join(package["prompts"]) or "无"
+            print(f"已加载 {package['id']}：工具 {tools}；提示词 {prompts}")
     stop = asyncio.Event()
     watcher = asyncio.create_task(watch_env(app, stop))
 
