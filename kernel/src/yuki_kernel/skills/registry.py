@@ -213,8 +213,9 @@ class ToolRegistry:
             parts.append(f"[{prompt['name']}]\n{prompt['content'].strip()}")
         if self._packages:
             parts.append(
-                "外置工具包按需加载：当现有工具无法满足用户需求时，"
-                "先调用 list_packages 查看可用包，再调用 load_package 加载对应包后继续。"
+                "外置工具包按需加载：当用户需要的能力在当前工具列表里没有时，"
+                "先调用 list_packages 查看有哪些外置包可调用；找到对应包后调用 "
+                "load_package 加载，再使用包内工具。不要直接断言工具不存在。"
             )
         return "\n\n".join(parts)
 

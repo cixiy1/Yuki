@@ -19,6 +19,8 @@ yuki
 外置包默认只被发现，不进入上下文。模型需要某能力时，会先调用
 `list_packages` 查看可用包，再调用 `load_package` 加载；不用时可以
 `unload_package` 卸载。可以用 `AGENT_PACKAGES_PRELOAD` 让某些包启动时就加载。
+系统提示会明确告诉模型：当前工具列表没有对应能力时，先调用
+`list_packages` 查看可调用的外置包，不要直接断言工具不存在。
 
 当前目录已有三个示例包：
 
