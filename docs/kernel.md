@@ -577,6 +577,17 @@ manifest 完整格式见 [docs/tools/manifest.md](tools/manifest.md)。
 
 包扫描结果通过 `registry.package_scan` 暴露给外部软件（`packages` 为发现的包，`skipped` 为跳过原因），展示由外部软件负责。
 
+外部软件用 `package_scan` 与 `available_packages` 自行渲染，例如 example 启动时会输出：
+
+```text
+发现外置工具包：echo
+发现外置工具包：weather
+发现外置工具包：writing_style
+发现外置工具包：yuki_persona
+可用外置工具包：echo、weather、writing_style、yuki_persona
+已加载 yuki_persona：工具 无；提示词 yuki_identity
+```
+
 ### 7.4 审批
 
 满足以下任一条件时，工具执行前会走审批：
