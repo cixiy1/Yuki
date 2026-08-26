@@ -35,6 +35,40 @@ async def test_turn_stream_tool_loop(settings):
     assert "环境信息" in content
 
 
+@pytest.mark.asyncio
+async def test_turn_auto_loads_available_package(settings, weather_package):
+    registry = ToolRegistry(weather_package, available=["weather"])
+    fake = FakeProvider(
+        script=[
+            [
+                ChatChunk(
+                    tool_calls=[
+                        {
+                            "index": 0,
+                            "id": "call_1",
+                            "function": {
+                                "name": "weather_now",
+                                "arguments": '{"city":"New York"}',
+                            },
+                        }
+                    ]
+                )
+            ],
+            [ChatChunk(content="纽约 22°C。"), ChatChunk(done=True)],
+        ],
+        settings=settings,
+    )
+    agent = Agent("fake", registry, settings, provider=fake)
+
+    texts = []
+    async for event in agent.turn_stream("纽约天气"):
+        if event.kind == "tool_result":
+            texts.append(event.text)
+
+    assert "22°C" in texts
+    assert registry.active_packages == []
+
+
 class _LoopProvider(Provider):
     def __init__(self, settings: Settings, names: list[str]):
         super().__init__("loop", settings)

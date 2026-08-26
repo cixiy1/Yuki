@@ -1,5 +1,7 @@
 """审批门契约。"""
 
+import json
+
 import pytest
 
 from yuki_kernel.core.agent import Agent
@@ -37,6 +39,31 @@ def _registry(tmp_path):
         )
     )
     return registry
+
+
+def _echo_package_registry(tmp_path):
+    package_dir = tmp_path / "packages" / "echo"
+    package_dir.mkdir(parents=True)
+    (package_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "id": "echo",
+                "name": "回声包",
+                "version": "1.0.0",
+                "description": "回声",
+                "tools": [
+                    {
+                        "name": "echo_text",
+                        "description": "回声工具",
+                        "parameters": {"type": "object", "properties": {}},
+                        "entry": {"type": "command", "command": ["echo", "hi"]},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return ToolRegistry(tmp_path / "packages", available=["echo"])
 
 
 @pytest.mark.asyncio
@@ -103,6 +130,24 @@ async def test_approve_denied(settings, tmp_path):
     )
     results = await agent.execute_tool_calls(
         [{"function": {"name": "danger", "arguments": {}}}]
+    )
+    assert results[0]["content"] == "用户拒绝执行"
+
+
+@pytest.mark.asyncio
+async def test_auto_loaded_command_tool_still_requires_approval(settings, tmp_path):
+    async def approver(_name, _arguments):
+        return "n"
+
+    agent = Agent(
+        "fake",
+        _echo_package_registry(tmp_path),
+        settings,
+        provider=FakeProvider(settings=settings),
+        approver=approver,
+    )
+    results = await agent.execute_tool_calls(
+        [{"function": {"name": "echo_text", "arguments": {}}}]
     )
     assert results[0]["content"] == "用户拒绝执行"
 
