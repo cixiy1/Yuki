@@ -15,6 +15,12 @@ def test_environment_info_available():
     assert "environment_guide" in prompt_names
     assert "yuki_identity" not in prompt_names
     assert "get_name_guide" not in prompt_names
+    guide = next(
+        prompt["content"]
+        for prompt in registry.prompts
+        if prompt["name"] == "environment_guide"
+    )
+    assert "不要重复调用" in guide
 
     content = registry.execute("get_environment_info", {})
     assert "操作系统" in content
