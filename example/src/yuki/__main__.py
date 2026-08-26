@@ -46,6 +46,15 @@ async def main():
     store = SessionStore(settings.data_dir)
     package_manager = PackageManager(settings.packages_dir)
     app = App(settings, store, package_manager, approver=cli_approver)
+    scan = app.registry.package_scan
+    for package_id in scan.packages:
+        print(f"发现外置工具包：{package_id}")
+    for name, reason in scan.skipped:
+        print(f"跳过外置工具包 {name}：{reason}")
+    if scan.packages:
+        print(f"可用外置工具包：{'、'.join(scan.packages)}")
+    else:
+        print("可用外置工具包：无")
     for package in app.registry.available_packages:
         if package["loaded"]:
             tools = "、".join(package["tools"]) or "无"

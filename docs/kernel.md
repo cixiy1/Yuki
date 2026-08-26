@@ -568,6 +568,8 @@ manifest 完整格式见 [docs/tools/manifest.md](tools/manifest.md)。
 - `load_package` / `unload_package`：加载/卸载
 - `search_memory`：检索长期记忆
 
+包扫描结果通过 `registry.package_scan` 暴露给外部软件（`packages` 为发现的包，`skipped` 为跳过原因），展示由外部软件负责。
+
 ### 7.4 审批
 
 满足以下任一条件时，工具执行前会走审批：
