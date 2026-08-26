@@ -67,6 +67,5 @@ def load_settings() -> Settings:
         namespace=os.getenv("AGENT_NAMESPACE", "default"),
         retry_max=_int_env("AGENT_RETRY_MAX", 3),
         retry_base=_float_env("AGENT_RETRY_BASE", 0.5),
-        max_tool_rounds=_int_env("AGENT_MAX_TOOL_ROUNDS", 8),
         data_dir=_resolve_path(os.getenv("DATA_DIR", ""), EXAMPLE_ROOT / "data"),
     )

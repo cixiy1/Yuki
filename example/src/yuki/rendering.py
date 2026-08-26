@@ -33,7 +33,4 @@ async def render_turn(app: App, line: str) -> None:
         elif event.kind == "package_restored":
             print(f"\n外置包已还原：{event.text}")
             state = "initial"
-        elif event.kind == "warning":
-            print(f"\n警告：{event.text}")
-            state = "initial"
     print()
