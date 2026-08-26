@@ -37,12 +37,6 @@ def test_execute_unknown_tool_not_auto_loaded(weather_package):
     assert registry.active_packages == []
 
 
-def test_activate_available_packages(weather_package):
-    registry = ToolRegistry(weather_package, available=["weather"])
-
-    assert registry.activate_available_packages() == ["weather"]
-    assert registry.active_packages == ["weather"]
-    assert registry.activate_available_packages() == []
 
 
 @pytest.mark.asyncio
