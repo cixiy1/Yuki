@@ -24,8 +24,18 @@ def _forced_answer_prompt(user_message: str, summary: str, reason: str) -> str:
         f"{reason}\n"
         f"用户刚才的问题是：{user_message}\n"
         f"最近一次工具结果：\n{summary}\n"
-        "请直接给出最终回答并把工具结果整理进去；"
+        "请直接给出最终回答并把真实执行过的工具结果整理进去；"
+        "只引用真实执行过的工具结果，不要假装调用过工具，也不要编造工具结果；"
         "不要输出调用计划、不要提问、不要继续调用工具。"
+    )
+
+
+def _repeat_hint_prompt(user_message: str) -> str:
+    return (
+        "检测到重复工具调用，停止重复同一个调用。\n"
+        f"用户刚才的问题是：{user_message}\n"
+        "如果用户要求的能力来自可用外置包，直接调用包内具体工具；"
+        "未加载的可用工具会自动加载。如果确实没有可用的工具，再直接回答。"
     )
 
 
@@ -165,6 +175,7 @@ class Agent:
         tool_calls: list[Any] = []
         all_calls: list[Any] = []
         previous_signature: list[tuple[str, str]] = []
+        repeated_count = 0
         latest_results: list[dict[str, Any]] = []
         async for event in consume(self.send_message(user_message), tool_calls):
             yield event
@@ -180,6 +191,21 @@ class Agent:
                 for call in merge_tool_calls(tool_calls)
             )
             if signature == previous_signature:
+                repeated_count += 1
+                if repeated_count < 2:
+                    self.memory.append(
+                        {
+                            "role": "system",
+                            "content": _repeat_hint_prompt(user_message),
+                        }
+                    )
+                    async for event in consume(
+                        self._stream_with_hooks(self.memory, self.registry.tools),
+                        tool_calls,
+                    ):
+                        yield event
+                    all_calls.extend(tool_calls)
+                    continue
                 summary = "\n".join(result["content"] for result in latest_results)
                 self.memory.append(
                     {
@@ -187,7 +213,7 @@ class Agent:
                         "content": _forced_answer_prompt(
                             user_message,
                             summary,
-                            "检测到重复工具调用。",
+                            "连续重复工具调用后停止。",
                         ),
                     }
                 )
@@ -197,6 +223,7 @@ class Agent:
                 ):
                     yield event
                 break
+            repeated_count = 0
             previous_signature = signature
             results = await self.execute_tool_calls(tool_calls)
             latest_results = results

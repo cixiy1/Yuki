@@ -115,14 +115,56 @@ async def test_repeated_tool_calls_stop_early(settings):
     async for event in agent.turn_stream("一直调用工具"):
         events.append((event.kind, event.text))
 
-    assert provider.tool_calls == 2
+    assert provider.tool_calls == 3
     assert any(kind == "content" and "最终回答" in text for kind, text in events)
+    assert any(
+        message.get("role") == "system"
+        and "直接调用包内具体工具" in message.get("content", "")
+        for message in agent.memory
+    )
     assert any(
         message.get("role") == "system"
         and "用户刚才的问题是" in message.get("content", "")
         and "最近一次工具结果" in message.get("content", "")
         for message in agent.memory
     )
+
+
+@pytest.mark.asyncio
+async def test_repeated_meta_call_recovers_to_real_tool(settings, weather_package):
+    registry = ToolRegistry(weather_package, available=["weather"])
+    list_call = {
+        "index": 0,
+        "id": "call_list",
+        "function": {"name": "list_packages", "arguments": "{}"},
+    }
+    weather_call = {
+        "index": 0,
+        "id": "call_weather",
+        "function": {"name": "weather_now", "arguments": '{"city":"New York"}'},
+    }
+    fake = FakeProvider(
+        script=[
+            [ChatChunk(tool_calls=[list_call])],
+            [ChatChunk(tool_calls=[list_call])],
+            [ChatChunk(tool_calls=[weather_call])],
+            [ChatChunk(content="纽约 22°C。"), ChatChunk(done=True)],
+        ],
+        settings=settings,
+    )
+    agent = Agent("fake", registry, settings, provider=fake)
+
+    results = []
+    content = ""
+    async for event in agent.turn_stream("纽约天气"):
+        if event.kind == "tool_result":
+            results.append(event.text)
+        if event.kind == "content":
+            content += event.text
+
+    assert any("22°C" in text for text in results)
+    assert "纽约 22°C。" in content
+    assert registry.active_packages == []
 
 
 @pytest.mark.asyncio
