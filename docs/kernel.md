@@ -507,7 +507,7 @@ registry = ToolRegistry(
 
 内核扫描与加载不打印任何内容，相关数据通过注册表暴露给外部软件：
 
-- `scan_packages()` 返回 `PackageScan`（`packages` 为发现的包，`skipped` 为跳过原因），并同时存入 `registry.package_scan`。
+- `scan_packages()` 返回 `PackageScan`（`packages` 为发现的包，`available` 为白名单后可用包，`skipped` 为跳过原因），并同时存入 `registry.package_scan`。
 - `registry.available_packages` 返回结构化包列表（`id / name / description / tools / prompts / loaded`）。
 - 预加载的包在 `available_packages` 中 `loaded=True`；展示由外部软件负责。
 
@@ -575,7 +575,7 @@ manifest 完整格式见 [docs/tools/manifest.md](tools/manifest.md)。
 - `load_package` / `unload_package`：加载/卸载
 - `search_memory`：检索长期记忆
 
-包扫描结果通过 `registry.package_scan` 暴露给外部软件（`packages` 为发现的包，`skipped` 为跳过原因），展示由外部软件负责。
+包扫描结果通过 `registry.package_scan` 暴露给外部软件（`packages` 为发现的包，`available` 为可用包，`skipped` 为跳过原因），展示由外部软件负责。
 
 外部软件用 `package_scan` 与 `available_packages` 自行渲染，例如 example 启动时会输出：
 
