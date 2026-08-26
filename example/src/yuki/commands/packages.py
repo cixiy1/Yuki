@@ -6,6 +6,17 @@ from yuki_kernel.core.app import App
 from yuki_kernel.skills.sources import LocalDirSource, ZipSource
 
 
+def _print_scan(scan) -> None:
+    for package_id in scan.packages:
+        print(f"发现外置工具包：{package_id}")
+    for name, reason in scan.skipped:
+        print(f"跳过外置工具包 {name}：{reason}")
+    if scan.packages:
+        print(f"可用外置工具包：{'、'.join(scan.packages)}")
+    else:
+        print("可用外置工具包：无")
+
+
 async def handle_pkg(app: App, arg: str) -> None:
     parts = arg.split(maxsplit=1)
     sub = parts[0] if parts else ""
@@ -19,10 +30,10 @@ async def handle_pkg(app: App, arg: str) -> None:
         try:
             info = await app.package_manager.install(source, ref)
             print(f"已安装：{info.id} {info.version}")
-            app.registry.scan_packages(
+            _print_scan(app.registry.scan_packages(
                 app.settings.packages_dir,
                 available=app.settings.packages or None,
-            )
+            ))
         except Exception as err:
             print(f"安装失败：{err}")
     elif sub == "remove":
@@ -32,10 +43,10 @@ async def handle_pkg(app: App, arg: str) -> None:
         try:
             app.package_manager.remove(ref)
             print(f"已卸载：{ref}")
-            app.registry.scan_packages(
+            _print_scan(app.registry.scan_packages(
                 app.settings.packages_dir,
                 available=app.settings.packages or None,
-            )
+            ))
         except Exception as err:
             print(f"卸载失败：{err}")
     elif sub == "list":

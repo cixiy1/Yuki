@@ -46,6 +46,8 @@ async def main():
     store = SessionStore(settings.data_dir)
     package_manager = PackageManager(settings.packages_dir)
     app = App(settings, store, package_manager, approver=cli_approver)
+    for line in app.registry.preload_results:
+        print(line)
     stop = asyncio.Event()
     watcher = asyncio.create_task(watch_env(app, stop))
 

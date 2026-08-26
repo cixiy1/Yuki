@@ -1,5 +1,7 @@
 """CLI 斜杠命令契约。"""
 
+import json
+
 # noinspection PyUnresolvedReferences
 import pytest
 
@@ -40,3 +42,50 @@ async def test_session_commands(settings, store, tmp_path):
 
     await handle_command(app, "/sessions")
     assert [meta.name for meta in store.list_sessions()] == ["测试会话"]
+
+
+@pytest.mark.asyncio
+async def test_pkg_install_prints_scan(settings, store, tmp_path, capsys):
+    package_dir = tmp_path / "source" / "weather"
+    package_dir.mkdir(parents=True)
+    (package_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "id": "weather",
+                "name": "天气工具包",
+                "version": "1.0.0",
+                "description": "查询指定城市当前气温",
+                "tools": [
+                    {
+                        "name": "weather_now",
+                        "description": "查询指定城市当前气温",
+                        "parameters": {
+                            "type": "object",
+                            "required": ["city"],
+                            "properties": {
+                                "city": {"type": "string", "description": "城市英文名"}
+                            },
+                        },
+                        "entry": {
+                            "type": "python",
+                            "module": "tool.py",
+                            "handler": "weather_now",
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (package_dir / "tool.py").write_text(
+        "def weather_now(city):\n    return '22°C'\n",
+        encoding="utf-8",
+    )
+
+    app = App(settings, store, PackageManager(tmp_path / "packages"))
+    await handle_command(app, f"/pkg install {package_dir}")
+
+    out = capsys.readouterr().out
+    assert "已安装：weather 1.0.0" in out
+    assert "发现外置工具包：weather" in out
+    assert "可用外置工具包：weather" in out
