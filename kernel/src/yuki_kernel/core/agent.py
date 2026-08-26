@@ -156,7 +156,9 @@ class Agent:
         async for event in consume(self.send_message(user_message), tool_calls):
             yield event
         all_calls.extend(tool_calls)
-        while tool_calls:
+        for _ in range(self.settings.max_tool_rounds):
+            if not tool_calls:
+                break
             results = await self.execute_tool_calls(tool_calls)
             for result in results:
                 yield StreamEvent(kind="tool_result", text=result["content"])
@@ -166,6 +168,18 @@ class Agent:
             ):
                 yield event
             all_calls.extend(tool_calls)
+        else:
+            self.memory.append(
+                {
+                    "role": "system",
+                    "content": "已达到最大工具调用轮次，请基于已有结果直接回答用户，不要再调用工具。",
+                }
+            )
+            async for event in consume(
+                self._stream_with_hooks(self.memory, tools=None),
+                tool_calls,
+            ):
+                yield event
 
         changed = await self.restore_packages(active_packages)
         for package_id in changed:
