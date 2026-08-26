@@ -20,7 +20,8 @@ yuki
 `list_packages` 查看可用包，再调用 `load_package` 加载；不用时可以
 `unload_package` 卸载。可以用 `AGENT_PACKAGES_PRELOAD` 让某些包启动时就加载。
 系统提示会明确告诉模型：当前工具列表没有对应能力时，先调用
-`list_packages` 查看可调用的外置包，不要直接断言工具不存在。
+`list_packages` 查看可调用的外置包；拿到结果后调用 `load_package`
+加载具体工具，不要重复调用 `list_packages`。
 模型也可以直接调用可用包中的工具：如果该工具所在包尚未加载，内核会先
 自动加载对应包再执行，本轮结束后仍还原到本轮开始前的状态。
 
