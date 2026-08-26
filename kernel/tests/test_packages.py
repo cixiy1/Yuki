@@ -11,11 +11,11 @@ from yuki_kernel.skills.sources import LocalDirSource, ZipSource
 
 
 @pytest.mark.asyncio
-async def test_install_remove_list(tmp_path, example_packages):
+async def test_install_remove_list(tmp_path, weather_package):
     packages_dir = tmp_path / "installed"
     manager = PackageManager(packages_dir)
 
-    info = await manager.install(LocalDirSource(), str(example_packages / "weather"))
+    info = await manager.install(LocalDirSource(), str(weather_package / "weather"))
     assert info.id == "weather"
     assert (packages_dir / "weather").is_dir()
     assert [item.id for item in manager.list_installed()] == ["weather"]
@@ -26,12 +26,12 @@ async def test_install_remove_list(tmp_path, example_packages):
 
 
 @pytest.mark.asyncio
-async def test_install_from_zip(tmp_path, example_packages):
+async def test_install_from_zip(tmp_path, weather_package):
     zip_path = tmp_path / "weather.zip"
     with zipfile.ZipFile(zip_path, "w") as archive:
-        for file in (example_packages / "weather").rglob("*"):
+        for file in (weather_package / "weather").rglob("*"):
             if file.is_file():
-                archive.write(file, file.relative_to(example_packages))
+                archive.write(file, file.relative_to(weather_package))
 
     manager = PackageManager(tmp_path / "installed")
     info = await manager.install(ZipSource(), str(zip_path))

@@ -1,6 +1,6 @@
 """测试共享 fixture。"""
 
-import shutil
+import json
 from pathlib import Path
 
 import pytest
@@ -15,9 +15,6 @@ register_provider(
     "fake",
     lambda model, settings: FakeProvider(settings=settings, model=model),
 )
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-
 
 @pytest.fixture
 def settings(tmp_path):
@@ -40,7 +37,41 @@ def store(settings):
 
 
 @pytest.fixture
-def example_packages(tmp_path):
+def weather_package(tmp_path):
     dest = tmp_path / "packages"
-    shutil.copytree(PROJECT_ROOT / "example" / "packages", dest)
+    weather = dest / "weather"
+    weather.mkdir(parents=True)
+    (weather / "manifest.json").write_text(
+        json.dumps(
+            {
+                "id": "weather",
+                "name": "天气工具包",
+                "version": "1.0.0",
+                "description": "查询指定城市当前气温",
+                "tools": [
+                    {
+                        "name": "weather_now",
+                        "description": "查询指定城市当前气温",
+                        "parameters": {
+                            "type": "object",
+                            "required": ["city"],
+                            "properties": {
+                                "city": {"type": "string", "description": "城市英文名"}
+                            },
+                        },
+                        "entry": {
+                            "type": "python",
+                            "module": "tool.py",
+                            "handler": "weather_now",
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (weather / "tool.py").write_text(
+        "def weather_now(city):\n    return '22°C'\n",
+        encoding="utf-8",
+    )
     return dest
