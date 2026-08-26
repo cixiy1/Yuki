@@ -8,6 +8,17 @@ import pytest
 from yuki_kernel.skills.external import PackageError
 from yuki_kernel.skills.package_manager import PackageManager
 from yuki_kernel.skills.sources import LocalDirSource, ZipSource
+from yuki_kernel.skills import ToolRegistry
+
+
+def test_system_prompt_tells_model_to_discover_packages(weather_package):
+    registry = ToolRegistry(weather_package, available=["weather"])
+
+    prompt = registry.system_prompt()
+
+    assert "list_packages" in prompt
+    assert "load_package" in prompt
+    assert "不要直接断言工具不存在" in prompt
 
 
 @pytest.mark.asyncio
