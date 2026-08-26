@@ -5,7 +5,7 @@ from .types import Tool
 BUILTIN_TOOLS: list[Tool] = [
     {
         "name": "get_environment_info",
-        "description": "获取当前操作系统、Python 版本、工作目录等环境信息，生成命令前先调用",
+        "description": "获取当前操作系统、Python 版本、工作目录等环境信息；上下文已有环境信息时不要重复调用",
         "parameters": {
             "type": "object",
             "properties": {},
