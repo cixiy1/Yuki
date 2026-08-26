@@ -757,6 +757,7 @@ settings = Settings(
 | `namespace` | 否 | 长期记忆命名空间，默认 default |
 | `retry_max` | 否 | 模型调用重试次数，默认 3 |
 | `retry_base` | 否 | 重试退避基数（秒），默认 0.5 |
+| `max_tool_rounds` | 否 | 单轮最多连续工具调用次数，默认 8，超限后强制模型直接回答 |
 | `data_dir` | 否 | 会话与长期记忆数据目录 |
 
 内核不读取环境变量，`Settings` 必须由外部软件构造。
