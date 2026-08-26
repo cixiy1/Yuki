@@ -7,7 +7,7 @@ from yuki.rendering import render_turn
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
 # noinspection PyUnresolvedReferences
-from yuki_kernel.core.context import collect_stream
+from yuki_kernel.core.context import StreamEvent, collect_stream
 # noinspection PyUnresolvedReferences
 from yuki_kernel.providers import ChatChunk
 # noinspection PyUnresolvedReferences
@@ -26,6 +26,21 @@ async def test_render_turn_keeps_original_content(settings, store, tmp_path, cap
     )
     await render_turn(app, "纽约天气")
     assert "纽约22°C。</think>纽约22°C。" in capsys.readouterr().out
+
+
+@pytest.mark.asyncio
+async def test_render_turn_prints_warning(settings, store, tmp_path, capsys):
+    app = App(settings, store, PackageManager(tmp_path / "packages"))
+
+    async def fake_stream(_line):
+        yield StreamEvent(kind="warning", text="模型可能未实际执行工具")
+        yield StreamEvent(kind="done")
+
+    app.agent.turn_stream = fake_stream
+
+    await render_turn(app, "test")
+
+    assert "警告：模型可能未实际执行工具" in capsys.readouterr().out
 
 
 @pytest.mark.asyncio
