@@ -56,19 +56,17 @@ PYCHARM_VM_OPTIONS="$PWD/.pycharm-inspect.vmoptions" \
 
 默认不推送，只有明确要求时才推送。
 
-## 内核分支同步
+## 内核分支与 main
 
-- `main` 是全量仓库；`kernel` 分支是用 `git subtree split --prefix=kernel` 生成的内核独立分支，顶层只有内核项目（`pyproject.toml`、`src/`、`tests/`）。
-- 内核分支有更新时，在 `main` 上执行 `git subtree pull --prefix=kernel kernel`，把内核改动合并回 `main`。
-- `main` 的 `kernel/` 有更新时，重新生成内核分支：
+- `kernel` 分支是 `main` 去掉 `example` 的精简分支，根结构与 `main` 相同（`kernel/` 与 `main` 同路径），支持普通 `git merge`。
+- 内核改动在 `kernel` 分支提交后，合并回 `main`：
 
 ```bash
-git subtree split --prefix=kernel -b kernel-new
-git branch -f kernel kernel-new
-git branch -D kernel-new
+git merge -s ort -Xno-renames kernel
 ```
 
-- 推送只涉及 `main` 与 `kernel` 两个分支，默认不推送，由用户决定。
+- 该合并会保留 `main` 的 `example/`。不要用 GitHub 默认 PR 合并这个分支，rename 检测会误报冲突。
+- `main` 的 `kernel/` 更新后，需要从 `main` 去掉 `example` 重新生成 `kernel` 分支。
 
 ## 架构约定
 
