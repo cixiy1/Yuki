@@ -23,5 +23,5 @@ class Settings:
     namespace: str = "default"
     retry_max: int = 3
     retry_base: float = 0.5
-    max_tool_rounds: int = 8
+    max_tool_rounds: int = 16
     data_dir: Optional[Path] = None
