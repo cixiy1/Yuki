@@ -19,13 +19,20 @@ from ..skills.tools import merge_tool_calls
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 
 
-def _forced_answer_prompt(user_message: str, summary: str, reason: str) -> str:
+def _forced_answer_prompt(
+    user_message: str,
+    summary: str,
+    reason: str,
+    executed_names: list[str],
+) -> str:
+    names = "、".join(dict.fromkeys(executed_names)) or "无"
     return (
         f"{reason}\n"
         f"用户刚才的问题是：{user_message}\n"
+        f"本回合实际执行过的工具：{names}\n"
         f"最近一次工具结果：\n{summary}\n"
-        "请直接给出最终回答并把真实执行过的工具结果整理进去；"
-        "只引用真实执行过的工具结果，不要假装调用过工具，也不要编造工具结果；"
+        "只能引用上面实际执行过的工具及其真实结果；"
+        "没有实际执行过的工具，禁止写出它的执行结果，也不要把编造内容当作工具结果；"
         "不要输出调用计划、不要提问、不要继续调用工具。"
     )
 
@@ -45,6 +52,7 @@ class TurnResult:
     content: str = ""
     tool_calls: list[Any] = field(default_factory=list)
     changed_packages: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 class Agent:
@@ -150,6 +158,8 @@ class Agent:
                 result.tool_calls.extend(event.calls)
             elif event.kind == "package_restored":
                 result.changed_packages.append(event.text)
+            elif event.kind == "warning":
+                result.warnings.append(event.text)
         result.content, _, _ = clean_content(result.content, "")
         return result
 
@@ -174,6 +184,7 @@ class Agent:
 
         tool_calls: list[Any] = []
         all_calls: list[Any] = []
+        executed_names: list[str] = []
         previous_signature: list[tuple[str, str]] = []
         repeated_count = 0
         latest_results: list[dict[str, Any]] = []
@@ -214,6 +225,7 @@ class Agent:
                             user_message,
                             summary,
                             "连续重复工具调用后停止。",
+                            executed_names,
                         ),
                     }
                 )
@@ -222,10 +234,15 @@ class Agent:
                     tool_calls,
                 ):
                     yield event
+                yield StreamEvent(
+                    kind="warning",
+                    text="模型连续重复工具调用后被迫停止，可能未实际执行请求的工具。",
+                )
                 break
             repeated_count = 0
             previous_signature = signature
             results = await self.execute_tool_calls(tool_calls)
+            executed_names.extend(call["name"] for call in merge_tool_calls(tool_calls))
             latest_results = results
             for result in results:
                 yield StreamEvent(kind="tool_result", text=result["content"])
@@ -244,6 +261,7 @@ class Agent:
                         user_message,
                         summary,
                         "已达到最大工具调用轮次，请检查是否陷入死循环。",
+                        executed_names,
                     ),
                 }
             )
@@ -252,6 +270,10 @@ class Agent:
                 tool_calls,
             ):
                 yield event
+            yield StreamEvent(
+                kind="warning",
+                text="达到最大工具调用轮次，回答可能未基于最新工具结果。",
+            )
 
         changed = await self.restore_packages(active_packages)
         for package_id in changed:

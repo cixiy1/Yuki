@@ -117,6 +117,7 @@ async def test_repeated_tool_calls_stop_early(settings):
 
     assert provider.tool_calls == 3
     assert any(kind == "content" and "最终回答" in text for kind, text in events)
+    assert any(kind == "warning" for kind, text in events)
     assert any(
         message.get("role") == "system"
         and "直接调用包内具体工具" in message.get("content", "")
@@ -126,6 +127,11 @@ async def test_repeated_tool_calls_stop_early(settings):
         message.get("role") == "system"
         and "用户刚才的问题是" in message.get("content", "")
         and "最近一次工具结果" in message.get("content", "")
+        for message in agent.memory
+    )
+    assert any(
+        message.get("role") == "system"
+        and "本回合实际执行过的工具" in message.get("content", "")
         for message in agent.memory
     )
 
@@ -182,3 +188,4 @@ async def test_tool_loop_is_bounded(settings):
 
     assert provider.tool_calls == settings.max_tool_rounds + 1
     assert any(kind == "content" and "最终回答" in text for kind, text in events)
+    assert any(kind == "warning" for kind, text in events)
