@@ -21,6 +21,22 @@ def test_system_prompt_tells_model_to_discover_packages(weather_package):
     assert "不要直接断言工具不存在" in prompt
 
 
+def test_execute_auto_loads_available_package(weather_package):
+    registry = ToolRegistry(weather_package, available=["weather"])
+
+    assert registry.active_packages == []
+    result = registry.execute("weather_now", {"city": "New York"})
+    assert result == "22°C"
+    assert registry.active_packages == ["weather"]
+
+
+def test_execute_unknown_tool_not_auto_loaded(weather_package):
+    registry = ToolRegistry(weather_package, available=["weather"])
+
+    assert registry.execute("not_a_tool", {}) == "Unknown tool: not_a_tool"
+    assert registry.active_packages == []
+
+
 @pytest.mark.asyncio
 async def test_install_remove_list(tmp_path, weather_package):
     packages_dir = tmp_path / "installed"

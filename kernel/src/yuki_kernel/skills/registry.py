@@ -201,9 +201,9 @@ class ToolRegistry:
         self._prompts[name] = prompt
 
     def needs_approval(self, name: str) -> bool:
-        tool = self._tools.get(name)
-        if tool is None:
+        if not self._load_tool_package(name):
             return False
+        tool = self._tools[name]
         entry = tool.get("entry") or {}
         return entry.get("type") == "command" or bool(tool.get("requires_approval"))
 
@@ -223,9 +223,9 @@ class ToolRegistry:
         if name in META_NAMES:
             return self._execute_meta(name, arguments)
 
-        tool = self._tools.get(name)
-        if tool is None:
+        if not self._load_tool_package(name):
             return f"Unknown tool: {name}"
+        tool = self._tools[name]
         try:
             entry = require_entry(tool)
         except ValueError as err:
@@ -236,6 +236,15 @@ class ToolRegistry:
         if entry_type == "command":
             return self._executor.execute_command(tool, arguments)
         return f"Unknown entry type: {entry_type if entry_type is not None else 'None'}"
+
+    def _load_tool_package(self, name: str) -> bool:
+        if name in self._tools:
+            return True
+        for package_id, package in self._packages.items():
+            if any(tool["name"] == name for tool in package["tools"]):
+                self.activate_package(package_id)
+                return name in self._tools
+        return False
 
     def _execute_meta(self, name: str, arguments: dict[str, Any]) -> str:
         if name == "list_packages":
