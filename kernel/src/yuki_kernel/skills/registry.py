@@ -214,8 +214,8 @@ class ToolRegistry:
         if self._packages:
             parts.append(
                 "外置工具包按需加载：当用户需要的能力在当前工具列表里没有时，"
-                "先调用 list_packages 查看有哪些外置包可调用；找到对应包后调用 "
-                "load_package 加载，再使用包内工具。不要直接断言工具不存在。"
+                "先调用 list_packages 查看有哪些外置包可调用；找到对应包后调用 load_package 加载你想使用的工具"
+                "不要重复调用 list_packages "
             )
         return "\n\n".join(parts)
 

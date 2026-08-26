@@ -18,7 +18,7 @@ def test_system_prompt_tells_model_to_discover_packages(weather_package):
 
     assert "list_packages" in prompt
     assert "load_package" in prompt
-    assert "不要直接断言工具不存在" in prompt
+    assert "不要重复调用 list_packages" in prompt
 
 
 def test_execute_auto_loads_available_package(weather_package):
