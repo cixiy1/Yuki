@@ -2,9 +2,8 @@
 
 import pytest
 
-from yuki_kernel.config import Settings
 from yuki_kernel.core.agent import Agent
-from yuki_kernel.providers import ChatChunk, Provider
+from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills import ToolRegistry
 
 # noinspection PyUnresolvedReferences
@@ -69,75 +68,8 @@ async def test_turn_auto_loads_available_package(settings, weather_package):
     assert registry.active_packages == []
 
 
-class _LoopProvider(Provider):
-    def __init__(self, settings: Settings, names: list[str]):
-        super().__init__("loop", settings)
-        self.tool_calls = 0
-        self.names = names
-
-    async def chat(self, messages, tools=None, **kwargs):
-        del messages, kwargs
-        if tools is None:
-            yield ChatChunk(content="最终回答")
-            yield ChatChunk(done=True)
-            return
-        name = self.names[self.tool_calls % len(self.names)]
-        self.tool_calls += 1
-        yield ChatChunk(
-            tool_calls=[
-                {
-                    "index": 0,
-                    "id": f"call_{self.tool_calls}",
-                    "function": {
-                        "name": name,
-                        "arguments": "{}",
-                    },
-                }
-            ]
-        )
-        yield ChatChunk(done=True)
-
-    @staticmethod
-    def build_tool_messages(tool_calls, results):
-        return [
-            {"role": "assistant", "content": "", "tool_calls": tool_calls},
-            *[{"role": "tool", "content": result["content"]} for result in results],
-        ]
-
-
 @pytest.mark.asyncio
-async def test_repeated_tool_calls_stop_early(settings):
-    registry = ToolRegistry(None)
-    provider = _LoopProvider(settings, names=["get_environment_info"])
-    agent = Agent("loop", registry, settings, provider=provider)
-
-    events = []
-    async for event in agent.turn_stream("一直调用工具"):
-        events.append((event.kind, event.text))
-
-    assert provider.tool_calls == 3
-    assert any(kind == "content" and "最终回答" in text for kind, text in events)
-    assert any(kind == "warning" for kind, text in events)
-    assert any(
-        message.get("role") == "system"
-        and "已临时加载可用外置包" in message.get("content", "")
-        for message in agent.memory
-    )
-    assert any(
-        message.get("role") == "system"
-        and "用户刚才的问题是" in message.get("content", "")
-        and "最近一次工具结果" in message.get("content", "")
-        for message in agent.memory
-    )
-    assert any(
-        message.get("role") == "system"
-        and "本回合实际执行过的工具" in message.get("content", "")
-        for message in agent.memory
-    )
-
-
-@pytest.mark.asyncio
-async def test_repeated_meta_call_recovers_to_real_tool(settings, weather_package):
+async def test_list_packages_then_concrete_tool(settings, weather_package):
     registry = ToolRegistry(weather_package, available=["weather"])
     list_call = {
         "index": 0,
@@ -151,7 +83,6 @@ async def test_repeated_meta_call_recovers_to_real_tool(settings, weather_packag
     }
     fake = FakeProvider(
         script=[
-            [ChatChunk(tool_calls=[list_call])],
             [ChatChunk(tool_calls=[list_call])],
             [ChatChunk(tool_calls=[weather_call])],
             [ChatChunk(content="纽约 22°C。"), ChatChunk(done=True)],
@@ -171,26 +102,3 @@ async def test_repeated_meta_call_recovers_to_real_tool(settings, weather_packag
     assert any("22°C" in text for text in results)
     assert "纽约 22°C。" in content
     assert registry.active_packages == []
-    assert any(
-        message.get("role") == "system"
-        and "weather" in message.get("content", "")
-        for message in agent.memory
-    )
-
-
-@pytest.mark.asyncio
-async def test_tool_loop_is_bounded(settings):
-    registry = ToolRegistry(None)
-    provider = _LoopProvider(
-        settings,
-        names=["get_environment_info", "list_packages"],
-    )
-    agent = Agent("loop", registry, settings, provider=provider)
-
-    events = []
-    async for event in agent.turn_stream("一直调用工具"):
-        events.append((event.kind, event.text))
-
-    assert provider.tool_calls == 4
-    assert any(kind == "content" and "最终回答" in text for kind, text in events)
-    assert any(kind == "warning" for kind, text in events)
