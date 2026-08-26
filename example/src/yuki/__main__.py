@@ -51,8 +51,8 @@ async def main():
         print(f"发现外置工具包：{package_id}")
     for name, reason in scan.skipped:
         print(f"跳过外置工具包 {name}：{reason}")
-    if scan.packages:
-        print(f"可用外置工具包：{'、'.join(scan.packages)}")
+    if scan.available:
+        print(f"可用外置工具包：{'、'.join(scan.available)}")
     else:
         print("可用外置工具包：无")
     for package in app.registry.available_packages:
