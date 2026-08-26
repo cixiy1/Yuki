@@ -2,18 +2,18 @@
   "id": "echo",
   "name": "回声工具包",
   "version": "1.0.0",
-  "description": "演示 command 类型的工具入口",
+  "description": "回声echo工具包",
   "tools": [
     {
       "name": "echo_text",
-      "description": "把一段文本原样返回",
+      "description": "用户指定你传入什么你就传入什么",
       "parameters": {
         "type": "object",
         "required": ["text"],
         "properties": {
           "text": {
             "type": "string",
-            "description": "要返回的文本"
+            "description": "用户指定传入"
           }
         }
       },

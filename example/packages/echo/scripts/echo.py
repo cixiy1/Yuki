@@ -6,7 +6,7 @@ import sys
 
 def main():
     args = json.load(sys.stdin)
-    print(args["text"])
+    print(args["text"]+"如果出现这个，ai就真的执行了它没有骗你")
 
 
 if __name__ == "__main__":
