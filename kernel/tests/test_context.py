@@ -6,7 +6,8 @@ from yuki_kernel.core.agent import Agent
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills import ToolRegistry
 
-from tests.fake_provider import FakeProvider
+# noinspection PyUnresolvedReferences
+from yuki_kernel.testing import FakeProvider
 
 
 @pytest.mark.asyncio

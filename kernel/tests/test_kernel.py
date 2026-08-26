@@ -11,7 +11,8 @@ from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills.package_manager import PackageManager
 from yuki_kernel.skills import ToolRegistry
 
-from tests.fake_provider import FakeProvider, env_tool_call_chunk
+# noinspection PyUnresolvedReferences
+from yuki_kernel.testing import FakeProvider, env_tool_call_chunk
 
 
 @pytest.mark.asyncio

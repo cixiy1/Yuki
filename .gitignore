@@ -50,6 +50,9 @@ htmlcov/
 
 # ============ JetBrains (PyCharm/IDEA) ============
 .idea/
+!.idea/inspectionProfiles/
+!.idea/inspectionProfiles/Project_Default.xml
+!.idea/inspectionProfiles/profiles_settings.xml
 .pycharm-inspect.vmoptions
 *.iml
 /shelf/

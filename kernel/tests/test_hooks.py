@@ -9,7 +9,8 @@ from yuki_kernel.core.events import Middleware
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills import ToolRegistry
 
-from tests.fake_provider import FakeProvider
+# noinspection PyUnresolvedReferences
+from yuki_kernel.testing import FakeProvider
 
 
 class Recorder(Middleware):
