@@ -4,7 +4,10 @@ import json
 from pathlib import Path
 from typing import Any, AsyncIterator
 
+import pytest
+
 from .config import Settings
+from .core.memory import SessionStore
 from .providers import ChatChunk, Provider, register_provider
 
 
@@ -119,3 +122,33 @@ def make_weather_package(dest: Path) -> Path:
         encoding="utf-8",
     )
     return weather
+
+
+register_fake_provider()
+
+
+@pytest.fixture
+def settings(tmp_path):
+    return Settings(
+        provider="fake",
+        model="fake",
+        data_dir=tmp_path / "data",
+        packages_dir=tmp_path / "packages",
+        retry_max=2,
+        retry_base=0.01,
+        max_context_tokens=100000,
+        keep_recent_messages=2,
+    )
+
+
+@pytest.fixture
+def store(settings):
+    assert settings.data_dir is not None
+    return SessionStore(settings.data_dir)
+
+
+@pytest.fixture
+def weather_package(tmp_path):
+    dest = tmp_path / "packages"
+    make_weather_package(dest)
+    return dest

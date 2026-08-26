@@ -45,7 +45,7 @@ async def test_session_commands(settings, store, tmp_path):
 
 @pytest.mark.asyncio
 async def test_pkg_install_prints_scan(settings, store, tmp_path, capsys, weather_package):
-    app = App(settings, store, PackageManager(tmp_path / "packages"))
+    app = App(settings, store, PackageManager(tmp_path / "installed"))
     await handle_command(app, f"/pkg install {weather_package / 'weather'}")
 
     out = capsys.readouterr().out
