@@ -26,6 +26,7 @@ def test_scan_packages_returns_data_without_printing(weather_package, capsys):
 
     assert "weather" in scan.packages
     assert scan.skipped == []
+    assert registry.package_scan.packages == scan.packages
     assert capsys.readouterr().out == ""
 
 
@@ -36,6 +37,7 @@ def test_scan_packages_missing_dir(tmp_path, capsys):
 
     assert scan.packages == {}
     assert scan.skipped == [(str(tmp_path / "nope"), "目录不存在")]
+    assert registry.package_scan.skipped == scan.skipped
     assert capsys.readouterr().out == ""
 
 
