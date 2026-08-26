@@ -19,6 +19,16 @@ from ..skills.tools import merge_tool_calls
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 
 
+def _forced_answer_prompt(user_message: str, summary: str, reason: str) -> str:
+    return (
+        f"{reason}\n"
+        f"用户刚才的问题是：{user_message}\n"
+        f"最近一次工具结果：\n{summary}\n"
+        "请直接给出最终回答并把工具结果整理进去；"
+        "不要输出调用计划、不要提问、不要继续调用工具。"
+    )
+
+
 @dataclass
 class TurnResult:
     thinking: str = ""
@@ -174,10 +184,10 @@ class Agent:
                 self.memory.append(
                     {
                         "role": "system",
-                        "content": (
-                            "检测到重复工具调用，最近一次工具结果如下，"
-                            "请直接据此回答用户刚才的问题，不要提问或继续调用工具：\n"
-                            + summary
+                        "content": _forced_answer_prompt(
+                            user_message,
+                            summary,
+                            "检测到重复工具调用。",
                         ),
                     }
                 )
@@ -203,11 +213,10 @@ class Agent:
             self.memory.append(
                 {
                     "role": "system",
-                    "content": (
-                        "已达到最大工具调用轮次，请检查是否陷入死循环。"
-                        "最近一次工具结果如下，请直接据此回答用户刚才的问题，"
-                        "不要提问或继续调用工具：\n"
-                        + summary
+                    "content": _forced_answer_prompt(
+                        user_message,
+                        summary,
+                        "已达到最大工具调用轮次，请检查是否陷入死循环。",
                     ),
                 }
             )
