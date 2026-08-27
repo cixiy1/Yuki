@@ -83,7 +83,7 @@ async def main():
         try:
             await app.agent.close()
             print("\n程序结束，资源清理完成")
-        except Exception as err:  # noqa: BLE001  退出清理兜底，避免结束时崩溃
+        except Exception as err:
             print(f"资源清理异常：{err!r}")
         sys.stdout.flush()
         sys.stderr.flush()
