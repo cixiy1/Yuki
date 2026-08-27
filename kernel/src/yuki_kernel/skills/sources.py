@@ -3,8 +3,8 @@
 import tempfile
 import zipfile
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from .external import MANIFEST_NAME, PackageError
 

@@ -4,7 +4,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from .sandbox import BasicSandbox, RunResult, Sandbox
 from .types import Tool, ToolEntry
@@ -49,7 +49,7 @@ def run_handler(handler: Any, arguments: dict[str, Any]) -> str:
 
 
 class ToolExecutor:
-    def __init__(self, sandbox: Optional[Sandbox] = None):
+    def __init__(self, sandbox: Sandbox | None = None):
         self.sandbox = sandbox or BasicSandbox()
 
     def _is_builtin(self, tool: Tool) -> bool:

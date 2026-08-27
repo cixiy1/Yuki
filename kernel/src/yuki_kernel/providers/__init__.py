@@ -4,7 +4,7 @@
 裸装 yuki-kernel（不装 openai / anthropic extras）也能 import 内核并使用自定义 Provider。
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from ..config import Settings
 from .anthropic import AnthropicProvider
@@ -16,8 +16,8 @@ __all__ = [
     "ChatChunk",
     "OpenAIProvider",
     "Provider",
-    "register_provider",
     "create_provider",
+    "register_provider",
 ]
 
 _PROVIDERS: dict[str, Callable[[str, Settings], Provider]] = {

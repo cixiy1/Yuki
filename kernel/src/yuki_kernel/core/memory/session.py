@@ -4,7 +4,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 
 def _now() -> str:
@@ -14,10 +14,10 @@ def _now() -> str:
 class Session:
     def __init__(
         self,
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
         name: str = "",
-        messages: Optional[list[dict[str, Any]]] = None,
-        created_at: Optional[str] = None,
+        messages: list[dict[str, Any]] | None = None,
+        created_at: str | None = None,
     ):
         self.session_id = session_id or uuid.uuid4().hex
         self.name = name
@@ -26,7 +26,7 @@ class Session:
         self.created_at = created_at or _now()
         self.updated_at = self.created_at
 
-    def approve(self, tool_name: str, minutes: Optional[int] = None) -> None:
+    def approve(self, tool_name: str, minutes: int | None = None) -> None:
         if minutes is None:
             self.approved_tools[tool_name] = float("inf")
         else:

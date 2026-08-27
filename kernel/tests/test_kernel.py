@@ -1,15 +1,12 @@
 """内核可嵌入性契约：turn、命名空间记忆、会话导入导出。"""
 
 import pytest
-
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.core.app import App
-from yuki_kernel.core.memory import MemoryStore
-from yuki_kernel.core.memory import Session
-from yuki_kernel.core.memory import SessionStore
+from yuki_kernel.core.memory import MemoryStore, Session, SessionStore
 from yuki_kernel.providers import ChatChunk
-from yuki_kernel.skills.package_manager import PackageManager
 from yuki_kernel.skills import ToolRegistry
+from yuki_kernel.skills.package_manager import PackageManager
 
 # noinspection PyUnresolvedReferences
 from yuki_kernel.testing import FakeProvider, env_tool_call_chunk

@@ -1,7 +1,8 @@
 """Anthropic provider：内核内置，懒加载 SDK，完整支持工具调用。"""
 
 import json
-from typing import Any, AsyncIterator, Mapping, Optional, Sequence, cast
+from collections.abc import AsyncIterator, Mapping, Sequence
+from typing import Any, cast
 
 from ..config import Settings
 from .base import ChatChunk, Provider
@@ -24,7 +25,7 @@ class AnthropicProvider(Provider):
     async def chat(
         self,
         messages: Sequence[Mapping[str, Any]],
-        tools: Optional[Sequence[Mapping[str, Any]]] = None,
+        tools: Sequence[Mapping[str, Any]] | None = None,
         **kwargs,
     ) -> AsyncIterator[ChatChunk]:
         kwargs.pop("stream", None)

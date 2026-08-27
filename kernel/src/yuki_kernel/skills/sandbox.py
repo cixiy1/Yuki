@@ -19,18 +19,17 @@ import resource
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
 class SandboxConfig:
     """BasicSandbox 的阀门配置。"""
 
-    user: Optional[str] = None  # 降级到的无特权系统用户，如 "nobody"；None=不降权
+    user: str | None = None  # 降级到的无特权系统用户，如 "nobody"；None=不降权
     cpu_seconds: int = 10  # CPU 时间上限（秒）
     memory_bytes: int = 256 * 1024 * 1024  # 地址空间上限（字节）
     file_bytes: int = 10 * 1024 * 1024  # 单个文件写入上限（字节）
-    allowed_binaries: Optional[list[str]] = None  # command 入口可执行文件白名单；None=不限制
+    allowed_binaries: list[str] | None = None  # command 入口可执行文件白名单；None=不限制
     extra_env: dict[str, str] = field(default_factory=dict)  # 注入子进程的环境变量
 
 
@@ -50,7 +49,7 @@ class Sandbox:
         cwd: Path,
         input_text: str,
         timeout: float = 30,
-        env: Optional[dict[str, str]] = None,
+        env: dict[str, str] | None = None,
     ) -> RunResult:
         raise NotImplementedError
 
@@ -58,12 +57,12 @@ class Sandbox:
 class BasicSandbox(Sandbox):
     """纯标准库的默认沙箱：降权 + 资源上限 + 命令白名单 + 清空环境。"""
 
-    def __init__(self, config: Optional[SandboxConfig] = None):
+    def __init__(self, config: SandboxConfig | None = None):
         self.config = config or SandboxConfig()
         self._identity = self._resolve_identity(self.config.user)
 
     @staticmethod
-    def _resolve_identity(user: Optional[str]) -> Optional[tuple[int, int]]:
+    def _resolve_identity(user: str | None) -> tuple[int, int] | None:
         if user is None:
             return None
         try:
@@ -93,7 +92,7 @@ class BasicSandbox(Sandbox):
         cwd: Path,
         input_text: str,
         timeout: float = 30,
-        env: Optional[dict[str, str]] = None,
+        env: dict[str, str] | None = None,
     ) -> RunResult:
         """执行命令。env 传入时直接使用（内核内置工具继承宿主环境）；
         不传时按沙箱策略清空环境、只注入 extra_env。"""

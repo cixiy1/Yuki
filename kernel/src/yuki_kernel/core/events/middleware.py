@@ -1,6 +1,6 @@
 """中间件链：before 可改写或中止事件，after 只做收尾。"""
 
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from .events import AgentEvent
 
