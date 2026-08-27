@@ -71,6 +71,9 @@ out/
 Thumbs.db
 Desktop.ini
 
-# ============ 项目文件 ============
-test
-data/
+# ============ Qodana ============
+# qodana.yaml 是检查配置（linter 选择），可提交；缓存与报告本地产物，忽略。
+.qodana/
+qodana-report/
+/tmp/qodana-results
+

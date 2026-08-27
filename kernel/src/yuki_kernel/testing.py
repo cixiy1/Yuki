@@ -127,7 +127,7 @@ def make_weather_package(dest: Path) -> Path:
 
 register_fake_provider()
 
-__all__ = ["FakeProvider", "pytest"]
+__all__ = ["FakeProvider", "env_tool_call_chunk", "pytest"]
 
 
 @pytest.fixture
