@@ -2,6 +2,7 @@
 
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.skills.sources import LocalDirSource, ZipSource
 
@@ -34,7 +35,7 @@ async def handle_pkg(app: App, arg: str) -> None:
                 app.settings.packages_dir,
                 available=app.settings.packages or None,
             ))
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001  安装失败兜底提示
             print(f"安装失败：{err}")
     elif sub == "remove":
         if not ref:
@@ -47,7 +48,7 @@ async def handle_pkg(app: App, arg: str) -> None:
                 app.settings.packages_dir,
                 available=app.settings.packages or None,
             ))
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001  卸载失败兜底提示
             print(f"卸载失败：{err}")
     elif sub == "list":
         infos = app.package_manager.list_installed()

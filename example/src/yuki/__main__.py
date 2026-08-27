@@ -9,15 +9,17 @@ from typing import cast
 
 sys.path.insert(0, str(Path(cast(str, __file__)).resolve().parent.parent))
 
-from yuki.approver import cli_approver
-from yuki.cli import run
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.memory import SessionStore
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.skills.package_manager import PackageManager
 
+from yuki.approver import cli_approver
+from yuki.cli import run
 from yuki.settings import EXAMPLE_ROOT, load_settings
 
 
@@ -81,8 +83,8 @@ async def main():
         try:
             await app.agent.close()
             print("\n程序结束，资源清理完成")
-        except Exception as err:
-            print(f"资源清理异常：{repr(err)}")
+        except Exception as err:  # noqa: BLE001  退出清理兜底，避免结束时崩溃
+            print(f"资源清理异常：{err!r}")
         sys.stdout.flush()
         sys.stderr.flush()
         os._exit(1 if err is not None else 0)

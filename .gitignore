@@ -77,3 +77,6 @@ Desktop.ini
 qodana-report/
 /tmp/qodana-results
 
+
+# 示例运行时数据（memory/session 库，不入库）
+example/data/

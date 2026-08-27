@@ -2,14 +2,17 @@
 
 # noinspection PyUnresolvedReferences
 import pytest
-
 from yuki.rendering import render_turn
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.context import collect_stream
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.providers import ChatChunk
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.skills.package_manager import PackageManager
 

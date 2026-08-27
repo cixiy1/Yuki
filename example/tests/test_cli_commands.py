@@ -2,12 +2,14 @@
 
 # noinspection PyUnresolvedReferences
 import pytest
-
 from yuki.commands import handle_command
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.providers import ChatChunk
+
 # noinspection PyUnresolvedReferences
 from yuki_kernel.skills.package_manager import PackageManager
 
