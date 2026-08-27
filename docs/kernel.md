@@ -57,8 +57,15 @@
 ## 3. 安装与导入
 
 ```bash
-pip install -e .
+pip install -e .                    # 仅内核，不含任何厂商 SDK
+pip install -e ".[openai]"          # 需要 OpenAI 兼容接口（智谱等）
+pip install -e ".[anthropic]"       # 需要 Anthropic
+pip install -e ".[openai,anthropic]"  # 两者都要
 ```
+
+内核不对厂商 SDK 做强依赖：`import yuki_kernel` 不会拖入 `openai` / `anthropic`，
+用到哪个 Provider 才在实例化时按需加载对应 SDK。未安装对应 extra 就创建该 Provider
+会抛出清晰的导入错误，提示安装命令。
 
 ```text
 from yuki_kernel import (
@@ -494,6 +501,39 @@ while calls:
 | 深度定制工具循环 | 手动 `send_message` + `execute_tool_calls` + `continue_with_tools` |
 
 ## 7. 工具
+
+### 7.0 工具执行沙箱
+
+外置包可能执行任意 Python 代码或系统命令。内核默认不再在进程内 `exec` 任意代码：
+**python 工具也经子进程执行**，与 `command` 入口共用一层 OS 级沙箱（`BasicSandbox`），
+纯标准库实现，不引入新依赖。护栏包括：
+
+- 降权到无特权用户（`SandboxConfig.user`，如 `"nobody"`）。
+- 限制 CPU 时间、地址空间、单文件写入大小（`cpu_seconds` / `memory_bytes` / `file_bytes`）。
+- 默认清空子进程环境变量，只注入 `extra_env` 指定的项。
+- `command` 入口可执行文件白名单（`allowed_binaries`），不在名单内直接拒绝。
+
+沙箱降低的是「工具能干什么」的上限，不是替代宿主对包来源的信任审查——仍只加载你信任的包。
+要更强的隔离（容器 / firejail / nsjail / seccomp 断网），实现 `Sandbox` 接口后注入：
+
+```text
+from yuki_kernel import App, Settings, ToolRegistry
+from yuki_kernel.skills import BasicSandbox, SandboxConfig
+
+settings = Settings(
+    provider="openai",
+    model="glm-4-flash",
+    openai_api_key="你的Key",
+    sandbox=SandboxConfig(user="nobody", cpu_seconds=10, allowed_binaries=["python3"]),
+)
+
+# App 会自动把 settings.sandbox 透传给 ToolRegistry
+# 也可以直接构造带沙箱的注册表：
+registry = ToolRegistry(packages_dir="packages", sandbox=BasicSandbox(SandboxConfig(user="nobody")))
+```
+
+注意：子进程默认继承当前用户权限；不设置 `user` 时沙箱仅提供资源上限与命令白名单。
+审批（见 7.4 节）是「是否放行」闸门，沙箱是「能干什么」阀门，两者叠加使用。
 
 ### 7.1 工具注册表
 

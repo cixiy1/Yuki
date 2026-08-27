@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from .skills.sandbox import SandboxConfig
+
 
 @dataclass
 class Settings:
@@ -24,3 +26,4 @@ class Settings:
     retry_max: int = 3
     retry_base: float = 0.5
     data_dir: Optional[Path] = None
+    sandbox: Optional[SandboxConfig] = None
