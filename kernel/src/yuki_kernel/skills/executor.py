@@ -1,6 +1,7 @@
 """工具执行器：python 与 command 入口都经子进程执行，统一套一层 OS 级沙箱。"""
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -51,6 +52,26 @@ class ToolExecutor:
     def __init__(self, sandbox: Optional[Sandbox] = None):
         self.sandbox = sandbox or BasicSandbox()
 
+    def _is_builtin(self, tool: Tool) -> bool:
+        return tool.get("package") == "builtin"
+
+    def _sandbox_run(self, tool: Tool, command: list[str], payload: str) -> str:
+        """内置工具继承宿主环境与工作目录（内核自带、可信）；
+        外置包工具按沙箱策略执行（清空环境、cwd 为包目录）。"""
+        if self._is_builtin(tool):
+            return self._to_result(
+                self.sandbox.run(
+                    command,
+                    Path.cwd(),
+                    payload,
+                    timeout=_TIMEOUT,
+                    env=dict(os.environ),
+                )
+            )
+        return self._to_result(
+            self.sandbox.run(command, Path(tool["package_dir"]), payload, timeout=_TIMEOUT)
+        )
+
     def _to_result(self, run: RunResult) -> str:
         # 子进程异常已在引导脚本里转成「工具执行失败：...」打印到 stdout，
         # 故优先用 stdout；仅在 stdout 为空时回退 stderr。
@@ -83,9 +104,7 @@ class ToolExecutor:
             entry.get("method", "run"),
         ]
         payload = json.dumps(arguments, ensure_ascii=False)
-        return self._to_result(
-            self.sandbox.run(command, Path(tool["package_dir"]), payload, timeout=_TIMEOUT)
-        )
+        return self._sandbox_run(tool, command, payload)
 
     def execute_command(self, tool: Tool, arguments: dict[str, Any]) -> str:
         try:
@@ -98,6 +117,4 @@ class ToolExecutor:
         if not command:
             return "command 入口需要非空命令列表"
         payload = json.dumps(arguments, ensure_ascii=False)
-        return self._to_result(
-            self.sandbox.run(command, Path(tool["package_dir"]), payload, timeout=_TIMEOUT)
-        )
+        return self._sandbox_run(tool, command, payload)

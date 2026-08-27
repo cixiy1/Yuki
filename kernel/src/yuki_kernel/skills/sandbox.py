@@ -50,6 +50,7 @@ class Sandbox:
         cwd: Path,
         input_text: str,
         timeout: float = 30,
+        env: Optional[dict[str, str]] = None,
     ) -> RunResult:
         raise NotImplementedError
 
@@ -83,12 +84,17 @@ class BasicSandbox(Sandbox):
         cwd: Path,
         input_text: str,
         timeout: float = 30,
+        env: Optional[dict[str, str]] = None,
     ) -> RunResult:
+        """执行命令。env 传入时直接使用（内核内置工具继承宿主环境）；
+        不传时按沙箱策略清空环境、只注入 extra_env。"""
         cfg = self.config
         if not command:
             return RunResult(1, "", "空命令")
         if cfg.allowed_binaries is not None and command[0] not in cfg.allowed_binaries:
             return RunResult(1, "", f"命令不在白名单：{command[0]}")
+        if env is None:
+            env = dict(cfg.extra_env) if cfg.extra_env else {}
         try:
             proc = subprocess.run(
                 command,
@@ -97,7 +103,7 @@ class BasicSandbox(Sandbox):
                 text=True,
                 capture_output=True,
                 timeout=timeout,
-                env=dict(cfg.extra_env) if cfg.extra_env else {},
+                env=env,
                 preexec_fn=self._preexec,
             )
         except subprocess.TimeoutExpired:
