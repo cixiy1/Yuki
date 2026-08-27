@@ -106,6 +106,7 @@ class BasicSandbox(Sandbox):
         try:
             proc = subprocess.run(
                 command,
+                check=False,
                 cwd=cwd,
                 input=input_text,
                 text=True,

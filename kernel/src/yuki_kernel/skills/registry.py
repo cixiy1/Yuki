@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Union, cast
+from typing import Any, cast
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .executor import ToolExecutor, require_entry
@@ -12,7 +12,7 @@ from .meta import META_NAMES, META_TOOLS
 from .sandbox import BasicSandbox, Sandbox
 from .types import Tool
 
-PathLike = Union[str, Path]
+PathLike = str | Path
 
 
 @dataclass
@@ -120,7 +120,7 @@ class ToolRegistry:
             try:
                 package = load_package(package_dir)
                 discovered[package["id"]] = package
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001  包加载失败应跳过而非中断整个注册
                 skipped.append((package_dir.name, str(err)))
 
         if available is not None:
