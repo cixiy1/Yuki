@@ -3,11 +3,20 @@
 import pytest
 
 from yuki_kernel.core.agent import Agent
+from yuki_kernel.core.context.budget import estimate_tokens
 from yuki_kernel.providers import ChatChunk
 from yuki_kernel.skills import ToolRegistry
 
 # noinspection PyUnresolvedReferences
 from yuki_kernel.testing import FakeProvider
+
+
+def test_estimate_tokens_chinese_aware():
+    # 中文按 1 字符≈1 token；纯字母按 ~4 字符≈1 token
+    assert estimate_tokens("你好世界") == 4
+    assert estimate_tokens("hello") == 2  # ceil(5/4)=2
+    assert estimate_tokens("hi你好") == 3  # 2 拉丁 + 2 中文
+    assert estimate_tokens("") == 0
 
 
 @pytest.mark.asyncio

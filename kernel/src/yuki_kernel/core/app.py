@@ -36,6 +36,7 @@ class App:
             available=self.settings.packages or None,
             preload=self.settings.packages_preload,
             memory_searcher=self._memory_searcher,
+            sandbox=self.settings.sandbox,
         )
 
     def _memory_searcher(self, query: str) -> str:

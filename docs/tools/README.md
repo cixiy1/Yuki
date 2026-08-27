@@ -83,6 +83,11 @@ example/packages/
 `command` 入口工具和 manifest 声明 `requires_approval: true` 的工具，执行前需要审批：
 `y` 只批一次，`ya` 会话内记住，`y <分钟>` 记住指定时长，`n` 拒绝。
 
+内核默认对内嵌工具执行套一层 OS 级沙箱（`BasicSandbox`，纯标准库、无新依赖）：
+python 工具也经子进程运行，与 command 共用护栏。默认限制 CPU/内存/文件大小、清空环境；
+可设置无特权用户降权、`command` 入口命令白名单（`allowed_binaries`）。沙箱与审批叠加：
+审批决定「放不放行」，沙箱决定「能干什么」。详见 [kernel.md 7.0 节](../kernel.md)。
+
 ## 会话与包管理命令
 
 - `/save <名字>`：把当前会话写入 `data/sessions/`，索引进 SQLite。

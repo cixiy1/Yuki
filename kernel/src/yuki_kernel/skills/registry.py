@@ -8,6 +8,7 @@ from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .executor import ToolExecutor, require_entry
 from .external import discover_packages, load_package
 from .meta import META_NAMES, META_TOOLS
+from .sandbox import BasicSandbox, Sandbox
 from .types import Tool
 
 PathLike = Union[str, Path]
@@ -43,12 +44,13 @@ class ToolRegistry:
         available: Optional[list[str]] = None,
         preload: Optional[list[str]] = None,
         memory_searcher: Optional[Callable[[str], str]] = None,
+        sandbox: Optional[Sandbox] = None,
     ):
         self._tools: dict[str, Tool] = {}
         self._prompts: dict[str, dict[str, Any]] = {}
         self._packages: dict[str, dict[str, Any]] = {}
         self._active_packages: set[str] = set()
-        self._executor = ToolExecutor()
+        self._executor = ToolExecutor(sandbox or BasicSandbox())
         self.memory_searcher = memory_searcher
         self.package_scan = PackageScan()
         self.load_builtin()
