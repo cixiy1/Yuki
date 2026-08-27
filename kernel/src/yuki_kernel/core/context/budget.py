@@ -2,11 +2,25 @@
 
 import asyncio
 import math
+import re
 from typing import Any, Callable, Optional
 
 from ...config import Settings
 from ..errors import ProviderError
 from ..memory import MemoryStore
+
+# CJK 统一表意文字区（含扩展 A），1 字符≈1 token；
+# 其余字符（拉丁字母、标点、空白等）按 ~4 字符≈1 token。
+_CJK_RE = re.compile(r"[㐀-䶿一-鿿豈-﫿]")
+
+
+def estimate_tokens(text: str) -> int:
+    """估算一段文本的 token 数，对中文按 1 字符≈1 token 计。"""
+    if not text:
+        return 0
+    cjk = len(_CJK_RE.findall(text))
+    latin = len(text) - cjk
+    return cjk + math.ceil(latin / 4)
 
 MemoryProvider = Callable[[], list[dict[str, Any]]]
 Chat = Callable[..., Any]
@@ -32,7 +46,7 @@ class ContextManager:
         total = 0
         for message in self.memory_provider():
             content = message.get("content") or ""
-            total += max(1, math.ceil(len(content) / 3)) + 4
+            total += estimate_tokens(content) + 4
         return total
 
     async def ensure(self) -> None:
