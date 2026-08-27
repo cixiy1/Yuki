@@ -26,7 +26,7 @@ cd example && PYTHONPATH=../kernel/src:src ../.venv/bin/python -m pytest -q
 1. 跑上面的测试，确认全绿。
    - 必须自己实际运行测试并确认功能正常，再提交，不得跳过。
    - 任何变更（包括文档）提交前至少跑一次相关测试。
-2. 跑 PyCharm 无头检查，确认退出码为 0：
+2. 跑 PyCharm 无头检查（`inspect.sh`），确认退出码为 0：
 
 ```bash
 rm -rf /tmp/yuki-inspect /tmp/pycharm-config-yuki /tmp/pycharm-system-yuki /tmp/pycharm-log-yuki

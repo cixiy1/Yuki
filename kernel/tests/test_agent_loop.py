@@ -119,8 +119,7 @@ class _RecordingProvider(Provider):
         for chunk in chunks:
             yield chunk
 
-    @staticmethod
-    def build_tool_messages(tool_calls, results):
+    def build_tool_messages(self, tool_calls, results):
         assistant = {
             "role": "assistant",
             "content": None,

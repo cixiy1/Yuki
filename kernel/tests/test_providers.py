@@ -12,7 +12,7 @@ from yuki_kernel.providers import (
     create_provider,
     register_provider,
 )
-from yuki_kernel.providers.base import Provider
+from yuki_kernel.testing import FakeProvider
 
 
 def _openai_settings():
@@ -191,16 +191,10 @@ def test_registry_builtin_and_custom():
     assert isinstance(create_provider("openai", "gpt", settings), OpenAIProvider)
     assert isinstance(create_provider("anthropic", "claude", settings), AnthropicProvider)
 
-    class DummyProvider(Provider):
-        @staticmethod
-        async def chat(_messages, _tools=None, **_kwargs):
-            return None
-
-        @staticmethod
-        def build_tool_messages(_tool_calls, _results):
-            return []
-
-    register_provider("dummy", DummyProvider)
-    assert isinstance(create_provider("dummy", "m", settings), DummyProvider)
+    register_provider(
+        "dummy",
+        lambda model, runtime_settings: FakeProvider(runtime_settings, model=model),
+    )
+    assert isinstance(create_provider("dummy", "m", settings), FakeProvider)
     with pytest.raises(ValueError):
         create_provider("missing", "m", settings)

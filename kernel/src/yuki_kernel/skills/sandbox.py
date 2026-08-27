@@ -60,17 +60,26 @@ class BasicSandbox(Sandbox):
 
     def __init__(self, config: Optional[SandboxConfig] = None):
         self.config = config or SandboxConfig()
+        self._identity = self._resolve_identity(self.config.user)
+
+    @staticmethod
+    def _resolve_identity(user: Optional[str]) -> Optional[tuple[int, int]]:
+        if user is None:
+            return None
+        try:
+            account = pwd.getpwnam(user)
+        except KeyError as err:
+            raise ValueError(f"沙箱降权用户不存在：{user}") from err
+        return account.pw_gid, account.pw_uid
+
 
     def _preexec(self) -> None:
         cfg = self.config
-        if cfg.user:
-            try:
-                pw = pwd.getpwnam(cfg.user)
-            except KeyError:
-                return
+        if self._identity is not None:
+            gid, uid = self._identity
             # 先组后用户，避免丢失组查找能力
-            os.setgid(pw.pw_gid)
-            os.setuid(pw.pw_uid)
+            os.setgid(gid)
+            os.setuid(uid)
         with contextlib.suppress(ValueError, OSError):
             resource.setrlimit(resource.RLIMIT_CPU, (cfg.cpu_seconds, cfg.cpu_seconds))
         with contextlib.suppress(ValueError, OSError):

@@ -1,7 +1,6 @@
 """工具执行沙箱契约：降权/资源阀门、python/command 均经子进程。"""
 
 import shutil
-from pathlib import Path
 
 import pytest
 
@@ -14,6 +13,11 @@ def test_basic_sandbox_runs_command(tmp_path):
     result = sandbox.run(["python3", "-c", "print('ok')"], tmp_path, "", timeout=10)
     assert result.returncode == 0
     assert "ok" in result.stdout
+
+
+def test_basic_sandbox_rejects_missing_drop_privilege_user():
+    with pytest.raises(ValueError, match="沙箱降权用户不存在"):
+        BasicSandbox(SandboxConfig(user="__yuki_missing_user__"))
 
 
 def test_basic_sandbox_whitelist_rejects(tmp_path):
