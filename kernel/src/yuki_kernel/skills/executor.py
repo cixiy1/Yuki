@@ -4,7 +4,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from .sandbox import BasicSandbox, RunResult, Sandbox
 from .types import Tool, ToolEntry
@@ -49,10 +49,11 @@ def run_handler(handler: Any, arguments: dict[str, Any]) -> str:
 
 
 class ToolExecutor:
-    def __init__(self, sandbox: Optional[Sandbox] = None):
+    def __init__(self, sandbox: Sandbox | None = None):
         self.sandbox = sandbox or BasicSandbox()
 
-    def _is_builtin(self, tool: Tool) -> bool:
+    @staticmethod
+    def _is_builtin(tool: Tool) -> bool:
         return tool.get("package") == "builtin"
 
     def _sandbox_run(self, tool: Tool, command: list[str], payload: str) -> str:
@@ -72,7 +73,8 @@ class ToolExecutor:
             self.sandbox.run(command, Path(tool["package_dir"]), payload, timeout=_TIMEOUT)
         )
 
-    def _to_result(self, run: RunResult) -> str:
+    @staticmethod
+    def _to_result(run: RunResult) -> str:
         # 子进程异常已在引导脚本里转成「工具执行失败：...」打印到 stdout，
         # 故优先用 stdout；仅在 stdout 为空时回退 stderr。
         if run.stdout.strip():

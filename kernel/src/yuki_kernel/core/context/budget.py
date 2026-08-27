@@ -3,7 +3,8 @@
 import asyncio
 import math
 import re
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ...config import Settings
 from ..errors import ProviderError
@@ -33,7 +34,7 @@ class ContextManager:
         settings: Settings,
         memory_provider: MemoryProvider,
         chat: Chat,
-        memory_store: Optional[MemoryStore],
+        memory_store: MemoryStore | None,
         session_id_provider: SessionIdProvider,
     ):
         self.settings = settings

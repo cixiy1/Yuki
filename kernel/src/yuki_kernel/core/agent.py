@@ -1,19 +1,19 @@
 """Agent：异步会话闭环，包含重试、摘要、审批与钩子。"""
 
 import asyncio
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Union
+from typing import Any
 
 from ..config import Settings
 from ..providers import ChatChunk, Provider, create_provider
 from ..skills import ToolRegistry
-from .context import ContextManager
+from ..skills.tools import merge_tool_calls
+from .context import ContextManager, StreamEvent, TagFilter, clean_content
 from .errors import is_transient
 from .events import AgentEvent, EventBus, Middleware, run_after, run_before
 from .memory import MemoryStore, Session
 from .policy import ApprovalGate
-from .context import StreamEvent, TagFilter, clean_content
-from ..skills.tools import merge_tool_calls
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 
@@ -32,13 +32,13 @@ class Agent:
         model: str,
         registry: ToolRegistry,
         settings: Settings,
-        session: Optional[Session] = None,
-        provider: Union[str, Provider] = "openai",
+        session: Session | None = None,
+        provider: str | Provider = "openai",
         system_prompt: str = "",
-        middlewares: Optional[list[Middleware]] = None,
-        bus: Optional[EventBus] = None,
-        approver: Optional[Approver] = None,
-        memory_store: Optional[MemoryStore] = None,
+        middlewares: list[Middleware] | None = None,
+        bus: EventBus | None = None,
+        approver: Approver | None = None,
+        memory_store: MemoryStore | None = None,
     ):
         self.model = model
         self.settings = settings
@@ -228,7 +228,7 @@ class Agent:
     async def _chat_with_retry(
         self,
         messages: list[dict[str, Any]],
-        tools: Optional[list[dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
     ) -> AsyncIterator[ChatChunk]:
         for attempt in range(self.settings.retry_max):
             try:

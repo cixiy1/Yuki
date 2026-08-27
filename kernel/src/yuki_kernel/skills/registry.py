@@ -1,8 +1,9 @@
 """工具注册表：统一内置工具与外置工具包的 schema 与执行。"""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, cast
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
 from .executor import ToolExecutor, require_entry
@@ -11,7 +12,7 @@ from .meta import META_NAMES, META_TOOLS
 from .sandbox import BasicSandbox, Sandbox
 from .types import Tool
 
-PathLike = Union[str, Path]
+PathLike = str | Path
 
 
 @dataclass
@@ -40,11 +41,11 @@ class ToolRegistry:
 
     def __init__(
         self,
-        packages_dir: Optional[PathLike] = None,
-        available: Optional[list[str]] = None,
-        preload: Optional[list[str]] = None,
-        memory_searcher: Optional[Callable[[str], str]] = None,
-        sandbox: Optional[Sandbox] = None,
+        packages_dir: PathLike | None = None,
+        available: list[str] | None = None,
+        preload: list[str] | None = None,
+        memory_searcher: Callable[[str], str] | None = None,
+        sandbox: Sandbox | None = None,
     ):
         self._tools: dict[str, Tool] = {}
         self._prompts: dict[str, dict[str, Any]] = {}
@@ -107,7 +108,7 @@ class ToolRegistry:
     def scan_packages(
         self,
         packages_dir: Path,
-        available: Optional[list[str]] = None,
+        available: list[str] | None = None,
     ) -> PackageScan:
         if not packages_dir.is_dir():
             self.package_scan = PackageScan(skipped=[(str(packages_dir), "目录不存在")])
@@ -119,7 +120,7 @@ class ToolRegistry:
             try:
                 package = load_package(package_dir)
                 discovered[package["id"]] = package
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001  包加载失败应跳过而非中断整个注册
                 skipped.append((package_dir.name, str(err)))
 
         if available is not None:

@@ -1,7 +1,7 @@
 """事件总线：只负责广播，不做控制流。"""
 
 from collections import defaultdict
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from .events import AgentEvent
 

@@ -1,8 +1,9 @@
 """Provider 抽象与统一流式消息。"""
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Mapping, Optional, Sequence
+from typing import Any
 
 from ..config import Settings
 
@@ -11,8 +12,8 @@ from ..config import Settings
 class ChatChunk:
     """统一的流式消息片段，屏蔽不同 provider 的消息结构差异。"""
 
-    thinking: Optional[str] = None
-    content: Optional[str] = None
+    thinking: str | None = None
+    content: str | None = None
     tool_calls: list = field(default_factory=list)
     done: bool = False
 
@@ -26,7 +27,7 @@ class Provider(ABC):
     def chat(
         self,
         messages: Sequence[Mapping[str, Any]],
-        tools: Optional[Sequence[Mapping[str, Any]]] = None,
+        tools: Sequence[Mapping[str, Any]] | None = None,
         **kwargs,
     ) -> AsyncIterator[ChatChunk]:
         """调用模型并返回统一格式的异步流式结果。"""

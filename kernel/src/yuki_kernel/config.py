@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from .skills.sandbox import SandboxConfig
 
@@ -12,11 +11,11 @@ class Settings:
     provider: str
     model: str
     think: bool = True
-    openai_base_url: Optional[str] = None
-    openai_api_key: Optional[str] = None
-    anthropic_base_url: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
-    packages_dir: Optional[Path] = None
+    openai_base_url: str | None = None
+    openai_api_key: str | None = None
+    anthropic_base_url: str | None = None
+    anthropic_api_key: str | None = None
+    packages_dir: Path | None = None
     packages: list[str] = field(default_factory=list)
     packages_preload: list[str] = field(default_factory=list)
     max_context_tokens: int = 12000
@@ -25,5 +24,5 @@ class Settings:
     namespace: str = "default"
     retry_max: int = 3
     retry_base: float = 0.5
-    data_dir: Optional[Path] = None
-    sandbox: Optional[SandboxConfig] = None
+    data_dir: Path | None = None
+    sandbox: SandboxConfig | None = None

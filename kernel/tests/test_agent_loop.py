@@ -1,7 +1,6 @@
 """工具闭环契约：turn_stream 事件。"""
 
 import pytest
-
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.providers import ChatChunk, Provider
 from yuki_kernel.skills import ToolRegistry
@@ -119,8 +118,7 @@ class _RecordingProvider(Provider):
         for chunk in chunks:
             yield chunk
 
-    @staticmethod
-    def build_tool_messages(tool_calls, results):
+    def build_tool_messages(self, tool_calls, results):
         assistant = {
             "role": "assistant",
             "content": None,

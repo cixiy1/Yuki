@@ -1,6 +1,5 @@
 """应用容器：组装 settings / registry / agent，支持热加载。"""
 
-from typing import Optional
 
 from ..config import Settings
 from ..skills import ToolRegistry
@@ -15,7 +14,7 @@ class App:
         settings: Settings,
         store: SessionStore,
         package_manager: PackageManager,
-        approver: Optional[Approver] = None,
+        approver: Approver | None = None,
     ):
         self.settings = settings
         self.store = store

@@ -1,7 +1,8 @@
 """OpenAI 兼容 provider：内核内置，懒加载 SDK。"""
 
 import json
-from typing import Any, AsyncIterator, Mapping, Optional, Sequence, cast
+from collections.abc import AsyncIterator, Mapping, Sequence
+from typing import Any, cast
 
 from ..config import Settings
 from .base import ChatChunk, Provider
@@ -12,8 +13,8 @@ class OpenAIProvider(Provider):
         self,
         model: str,
         settings: Settings,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
     ):
         super().__init__(model, settings)
         try:
@@ -28,7 +29,7 @@ class OpenAIProvider(Provider):
     async def chat(
         self,
         messages: Sequence[Mapping[str, Any]],
-        tools: Optional[Sequence[Mapping[str, Any]]] = None,
+        tools: Sequence[Mapping[str, Any]] | None = None,
         **kwargs,
     ) -> AsyncIterator[ChatChunk]:
         kwargs.pop("stream", None)

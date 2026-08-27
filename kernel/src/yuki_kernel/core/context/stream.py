@@ -1,7 +1,8 @@
 """无头流式收集与内容清洗。"""
 
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator
+from typing import Any
 
 from ...providers import ChatChunk
 

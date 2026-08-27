@@ -1,8 +1,9 @@
 """测试辅助：fake provider 与样例工具包，供 kernel/example 测试共用。"""
 
 import json
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import Any
 
 import pytest
 
@@ -125,6 +126,8 @@ def make_weather_package(dest: Path) -> Path:
 
 
 register_fake_provider()
+
+__all__ = ["FakeProvider", "env_tool_call_chunk", "pytest"]
 
 
 @pytest.fixture

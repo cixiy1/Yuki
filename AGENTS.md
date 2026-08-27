@@ -26,7 +26,28 @@ cd example && PYTHONPATH=../kernel/src:src ../.venv/bin/python -m pytest -q
 1. 跑上面的测试，确认全绿。
    - 必须自己实际运行测试并确认功能正常，再提交，不得跳过。
    - 任何变更（包括文档）提交前至少跑一次相关测试。
-2. 跑 PyCharm 无头检查，确认退出码为 0：
+2. 跑 ruff 秒级快检，确认退出码为 0（拦截语法错误、未定义名、未用导入、盲异常等低级问题）：
+
+```bash
+cd kernel && ../.venv/bin/ruff check src tests
+cd example && ../.venv/bin/ruff check src tests
+```
+
+   - ruff 装在仓库 `.venv`（`python -m pip install ruff`），随该 venv 使用，不写进项目依赖。
+   - 全量默认规则，存量已由提交 `9144649`/`b42a63a` 清理；新时间戳统一带 `timezone.utc`（提交已修 DTZ005，避免跨时区错乱）。
+3. 合并回 `main` 前，跑一次 PyCharm 同引擎语义级检查（Qodana，覆盖 IDE 级数据流/可达性 inspection，慢但保留语义覆盖）：
+
+```bash
+# Qodana 官方 CLI：同 PyCharm 引擎，社区版 linter，CI 标准，免费、不需要 token。
+# 已实跑验证：native 模式（--within-docker false）不需要 Docker；
+# 首次会下载 community linter 运行时（约 3.7G，入 ~/Library/Caches/JetBrains/Qodana 缓存，后续复用）。
+# 注意：linter 名用短名 qodana-python-community，不要带 jetbrains/ 前缀（那是 docker 镜像名）。
+# 注意：Professional 版（qodana-python）2023.2+ 要求 QODANA_TOKEN，本地无头跑不通，必须用 community。
+qodana scan --linter qodana-python-community --within-docker false
+```
+
+   - **门槛判法不同于 inspect.sh**：Qodana 退出码 0 只代表「分析跑完」，不代表零问题（实跑本仓库报 57 problems 仍 exit 0）。判干净要看报告里的问题数，或加 `--fail-threshold` 让超阈值非零退出。报告默认在 `~/Library/Caches/JetBrains/qodana-python-community/results/report`（HTML）。
+   - 本地无 Docker/不想装 Qodana 时，退回 `inspect.sh` 无头检查（同引擎，慢在每次 `cp` 配置 + JVM 冷启）：
 
 ```bash
 rm -rf /tmp/yuki-inspect /tmp/pycharm-config-yuki /tmp/pycharm-system-yuki /tmp/pycharm-log-yuki
@@ -42,7 +63,7 @@ PYCHARM_VM_OPTIONS="$PWD/.pycharm-inspect.vmoptions" \
   -d "$PWD/example/tests"
 ```
 
-这条检查的目的是避免把 PyCharm 能看出来的问题提交进去。不要跳过。
+   - 该检查门槛是退出码 0，不是解析报告：退出 0 即「按 `Project Default` profile 跑这 4 个目录无 `<problem>` 产出」，不等同于 GUI Problems 视图零警告（GUI 默认 scope/severity 可能不同）。
 
 ## 提交格式
 

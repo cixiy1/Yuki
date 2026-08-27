@@ -1,12 +1,13 @@
 """审批门：判断工具是否需要审批并调用外部审批器。"""
 
-from typing import Any, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from ...skills import ToolRegistry
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[str]]
 SessionProvider = Callable[[], Any]
-ApproverProvider = Callable[[], Optional[Approver]]
+ApproverProvider = Callable[[], Approver | None]
 
 
 class ApprovalGate:
@@ -23,7 +24,7 @@ class ApprovalGate:
     async def check(
         self,
         name: str,
-        arguments: Optional[dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
     ) -> bool:
         if not self.registry.needs_approval(name):
             return True

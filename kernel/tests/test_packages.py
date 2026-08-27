@@ -4,11 +4,10 @@ import asyncio
 import zipfile
 
 import pytest
-
+from yuki_kernel.skills import ToolRegistry
 from yuki_kernel.skills.external import PackageError
 from yuki_kernel.skills.package_manager import PackageManager
 from yuki_kernel.skills.sources import LocalDirSource, ZipSource
-from yuki_kernel.skills import ToolRegistry
 
 
 def test_system_prompt_tells_model_to_discover_packages(weather_package):

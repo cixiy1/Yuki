@@ -509,6 +509,7 @@ while calls:
 纯标准库实现，不引入新依赖。护栏包括：
 
 - 降权到无特权用户（`SandboxConfig.user`，如 `"nobody"`）。
+- 降权用户在构造沙箱时校验，不存在会抛 `ValueError`，不会静默继续以当前用户执行。
 - 限制 CPU 时间、地址空间、单文件写入大小（`cpu_seconds` / `memory_bytes` / `file_bytes`）。
 - 默认清空子进程环境变量，只注入 `extra_env` 指定的项。
 - `command` 入口可执行文件白名单（`allowed_binaries`），不在名单内直接拒绝。
