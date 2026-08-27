@@ -34,8 +34,7 @@ cd example && ../.venv/bin/ruff check src tests
 ```
 
    - ruff 装在仓库 `.venv`（`python -m pip install ruff`），随该 venv 使用，不写进项目依赖。
-   - 全量默认规则，存量已由提交 `9144649`/`b42a63a` 清理；新的等价改写（import 排序、`Optional`→`X | None`）按该规则统一。
-   - 有意保留的豁免：`core/memory/*`、`skills/package_manager.py` 的 `DTZ005`（`datetime.now()` 不带时区）属时区语义决策，暂不强制；`BLE001`/`PLW1510` 等已就地加 `# noqa`。
+   - 全量默认规则，存量已由提交 `9144649`/`b42a63a` 清理；新时间戳统一带 `timezone.utc`（提交已修 DTZ005，避免跨时区错乱）。
 3. 合并回 `main` 前，跑一次 PyCharm 同引擎语义级检查（Qodana，覆盖 IDE 级数据流/可达性 inspection，慢但保留语义覆盖）：
 
 ```bash
