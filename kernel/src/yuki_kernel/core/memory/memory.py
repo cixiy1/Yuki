@@ -3,7 +3,7 @@
 import re
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -50,7 +50,7 @@ class MemoryStore:
     def add(self, session_id: str, content: str) -> None:
         if not content.strip():
             return
-        created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        created_at = datetime.now(UTC).isoformat(timespec="seconds")
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """
