@@ -56,18 +56,42 @@
 
 ## 3. 安装与导入
 
+`yuki_kernel` 是一个标准 Python 包，按使用方的不同有三种消费方式。
+
+### 3.1 作为已发布的包（面向互不相干的外部项目）
+
+把内核发到包索引（内部 PyPI / Artifactory 最佳，必要才上公共 PyPI）后，使用方只声明依赖：
+
 ```bash
-pip install -e .                    # 仅内核，不含任何厂商 SDK
-pip install -e ".[openai]"          # 需要 OpenAI 兼容接口（智谱等）
-pip install -e ".[anthropic]"       # 需要 Anthropic
-pip install -e ".[openai,anthropic]"  # 两者都要
+pip install yuki-kernel                   # 仅内核，不含任何厂商 SDK
+pip install "yuki-kernel[openai]"          # 需要 OpenAI 兼容接口（智谱等）
+pip install "yuki-kernel[anthropic]"       # 需要 Anthropic
+pip install "yuki-kernel[openai,anthropic]"  # 两者都要
 ```
+
+这是"被不同项目使用"的标准方式：版本化、隔离、零源码耦合。内核只对外承诺 §3.3 导出的
+稳定 public API，内部模块不当契约。
+
+### 3.2 从源码可编辑安装（本仓库 / 同组织兄弟项目）
+
+开发期或同仓库内消费（例如 `example` 外壳），直接装源码：
+
+```bash
+cd kernel  && pip install -e .    # 内核
+cd example && pip install -e .    # 示例外壳（依赖上面的内核）
+```
+
+可编辑安装把 `kernel/src` 加进解释器路径，改源码即时生效，**无需 `PYTHONPATH`**，
+PyCharm / CLI / 测试 / Qodana 统一从 `.venv` 解析。本仓库约定：`kernel/` 与 `example/`
+都从各自目录 `pip install -e .`。
+
+### 3.3 导入
 
 内核不对厂商 SDK 做强依赖：`import yuki_kernel` 不会拖入 `openai` / `anthropic`，
 用到哪个 Provider 才在实例化时按需加载对应 SDK。未安装对应 extra 就创建该 Provider
 会抛出清晰的导入错误，提示安装命令。
 
-```text
+```python
 from yuki_kernel import (
     Agent,
     App,
@@ -84,7 +108,9 @@ from yuki_kernel import (
 )
 ```
 
-不安装时把 `src` 加入 `sys.path`，或直接把 `yuki_kernel/` 复制进自己的项目。
+导入进来之后，真正"被不同项目使用"靠的是内核的运行时注入点（不修改内核源码）：
+注册自定义 `Provider`、注入 `Environment`、或直接传实例。详见 §5 与 §7.0。
+最小可运行示例见 §4。
 
 ## 4. 最小可运行示例
 

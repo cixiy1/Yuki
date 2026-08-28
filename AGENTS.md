@@ -10,11 +10,18 @@
 
 ## 怎么跑测试
 
-内核和示例是两个独立项目，分别验证：
+内核和示例是两个独立包，开发前先 editable 安装到 `.venv`（源码原地可改，无需 PYTHONPATH）：
 
 ```bash
-cd kernel && PYTHONPATH=src ../.venv/bin/python -m pytest -q
-cd example && PYTHONPATH=../kernel/src:src ../.venv/bin/python -m pytest -q
+./.venv/bin/python -m pip install -e kernel
+./.venv/bin/python -m pip install -e example
+```
+
+然后分别验证：
+
+```bash
+cd kernel && ../.venv/bin/python -m pytest -q
+cd example && ../.venv/bin/python -m pytest -q
 ```
 
 改动后测试必须全绿。
