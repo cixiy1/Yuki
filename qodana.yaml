@@ -6,12 +6,3 @@ version: "1.0"
 # 用社区版 linter：Professional 版（qodana-python）2023.2+ 要求 QODANA_TOKEN，
 # 本地无头跑不通。社区版免费、不需要 token。
 linter: qodana-python-community
-profile:
-  # 抑制对现代 Python 语法的已知噪声（ruff/pytest 均已认可，代码运行正常）：
-  # - PyTypeHintsInspection：把 PEP 604 的 `X | None` 等写法误报为无效注解；
-  # - PyClassHasNoInitInspection：把 @dataclass / 纯基类（无显式 __init__）误报。
-  inspections:
-    - inspection: PyTypeHintsInspection
-      enabled: false
-    - inspection: PyClassHasNoInitInspection
-      enabled: false

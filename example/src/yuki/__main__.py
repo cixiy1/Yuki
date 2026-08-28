@@ -1,7 +1,6 @@
 """Yuki 入口。"""
 
 import asyncio
-import os
 import sys
 import traceback
 from pathlib import Path
@@ -87,7 +86,7 @@ async def main():
             print(f"资源清理异常：{err!r}")
         sys.stdout.flush()
         sys.stderr.flush()
-        os._exit(1 if err is not None else 0)
+        sys.exit(1 if err is not None else 0)
 
 if __name__ == "__main__":
     try:
