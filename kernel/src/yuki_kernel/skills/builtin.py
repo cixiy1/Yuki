@@ -17,18 +17,13 @@ BUILTIN_TOOLS: list[Tool] = [
         },
     },{
         "name": "terminal",
-        "description": "在终端/terminal 中执行命令并返回标准输出与标准错误；适配各类 POSIX 终端。默认在降权沙箱中运行（无特权用户），可信环境下可传 sandbox: false 关闭降权。",
+        "description": "在终端/terminal 中执行命令并返回标准输出与标准错误；适配各类 POSIX 终端。沙箱与降权由宿主注入内核的 Sandbox 设定决定，工具本身不配置权限。",
         "parameters": {
             "type": "object",
             "properties": {
                 "cmd": {
                     "type": "string",
                     "description": "要执行的命令字符串，经 /bin/sh -c 运行",
-                },
-                "sandbox": {
-                    "type": "boolean",
-                    "description": "是否降权执行，默认 true；设为 false 仅在可信环境关闭",
-                    "default": True,
                 },
             },
             "required": ["cmd"],
