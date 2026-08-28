@@ -2,7 +2,6 @@
 
 # noinspection PyUnresolvedReferences
 import pytest
-from yuki.rendering import render_turn
 
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
@@ -18,6 +17,8 @@ from yuki_kernel.skills.package_manager import PackageManager
 
 # noinspection PyUnresolvedReferences
 from yuki_kernel.testing import FakeProvider
+
+from yuki.rendering import render_turn
 
 
 @pytest.mark.asyncio
