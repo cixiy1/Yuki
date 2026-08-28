@@ -2,6 +2,7 @@
 
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -38,14 +39,14 @@ def require_entry(tool: Tool) -> ToolEntry:
     return entry
 
 
-def run_handler(handler: Any, arguments: dict[str, Any]) -> str:
+def run_handler(handler: Callable[..., str], arguments: dict[str, Any]) -> str:
     if not callable(handler):
         return "handler 不可调用"
     try:
         result = handler(**arguments)
     except Exception as err:  # noqa: BLE001 - 工具异常需回喂模型而非崩溃
         return f"工具执行失败：{err}"
-    return f"{result}"
+    return str(result)
 
 
 class ToolExecutor:

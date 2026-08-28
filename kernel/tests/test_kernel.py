@@ -1,6 +1,7 @@
 """内核可嵌入性契约：turn、命名空间记忆、会话导入导出。"""
 
 import pytest
+
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.core.app import App
 from yuki_kernel.core.memory import MemoryStore, Session, SessionStore

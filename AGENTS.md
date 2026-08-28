@@ -43,10 +43,14 @@ cd example && ../.venv/bin/ruff check src tests
 # 首次会下载 community linter 运行时（约 3.7G，入 ~/Library/Caches/JetBrains/Qodana 缓存，后续复用）。
 # 注意：linter 名用短名 qodana-python-community，不要带 jetbrains/ 前缀（那是 docker 镜像名）。
 # 注意：Professional 版（qodana-python）2023.2+ 要求 QODANA_TOKEN，本地无头跑不通，必须用 community。
-qodana scan --linter qodana-python-community --within-docker false
+# 注意：必须显式用 QODANA_PYTHON_PATH 指向项目 .venv（3.14）；否则 Qodana 默认挑
+#   /usr/bin/python3（macOS 上为 3.9）当 SDK 语言级别，会把 PEP 604（X | None）/
+#   PEP 585（list[str]）当非法注解误报（PyTypeHintsInspection 等），且 profile 里
+#   没有 python 字段可配，只能走这个环境变量。
+QODANA_PYTHON_PATH="$(pwd)/.venv/bin/python" qodana scan --linter qodana-python-community --within-docker false
 ```
 
-   - **门槛判法不同于 inspect.sh**：Qodana 退出码 0 只代表「分析跑完」，不代表零问题（实跑本仓库报 57 problems 仍 exit 0）。判干净要看报告里的问题数，或加 `--fail-threshold` 让超阈值非零退出。报告默认在 `~/Library/Caches/JetBrains/qodana-python-community/results/report`（HTML）。
+   - **门槛判法不同于 inspect.sh**：Qodana 退出码 0 只代表「分析跑完」，不代表零问题。判干净要看报告里的问题数，或加 `--fail-threshold` 让超阈值非零退出。报告默认在 `~/Library/Caches/JetBrains/qodana-python-community/results/report`（HTML）。配对 `QODANA_PYTHON_PATH` 后本仓库为 0 problems。
    - 本地无 Docker/不想装 Qodana 时，退回 `inspect.sh` 无头检查（同引擎，慢在每次 `cp` 配置 + JVM 冷启）：
 
 ```bash

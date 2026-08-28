@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import ClassVar
 
 from .sandbox import BasicSandbox, RunResult, Sandbox
 
@@ -25,7 +24,10 @@ class Environment:
     """执行环境抽象：工具统一经它执行命令。"""
 
     python_path: str = sys.executable
-    base_env: ClassVar[dict[str, str]] = {}
+    base_env: dict[str, str]
+
+    def __init__(self) -> None:
+        self.base_env: dict[str, str] = {}
 
     def run(
         self,
@@ -50,6 +52,7 @@ class BasicEnvironment(Environment):
         python_path: str | None = None,
         base_env: dict[str, str] | None = None,
     ):
+        super().__init__()
         self._sandbox = sandbox or BasicSandbox()
         self.python_path = python_path or sys.executable
         self.base_env = base_env or {}

@@ -45,11 +45,11 @@ class FakeProvider(Provider):
     async def close(self, skip_unload: bool = False):
         self.closed = True
 
-    @staticmethod
     def build_tool_messages(
-        tool_calls,
-        results,
-    ):
+        self,
+        tool_calls: list[dict[str, Any]],
+        results: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         assistant = {
             "role": "assistant",
             "content": "",
