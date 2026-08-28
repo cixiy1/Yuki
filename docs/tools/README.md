@@ -71,8 +71,15 @@ example/packages/
 - `BUILTIN_TOOLS`：函数工具，`entry` 格式与外置包一致（支持 python 和 command 入口）。
 - `BUILTIN_PROMPTS`：内置提示词，`path` 指向 `builtins/prompts/` 下的 Markdown 文件。
 
-工具实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`，例如 `environment.py`。内置工具
+工具实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`，例如 `environment.py`、`shell.py`。内置工具
 始终在上下文中，不参与外置包的按需加载。
+
+### 现有内置工具
+
+- `get_environment_info`：读取操作系统、Python 版本、工作目录等环境信息，帮助模型生成正确命令。
+- `shell`：在终端/shell 中执行命令（经 `/bin/sh -c`，适配各 POSIX 终端），返回退出码、标准输出、标准错误。
+  默认在降权沙箱中运行（`user="nobody"`）；调用方可传 `sandbox: false` 关闭降权（仅在可信环境）。
+  降权是否真正生效由运行时环境与注入的 `Sandbox` 实现决定，详见下文「安全」。
 
 ## 安全
 
