@@ -13,10 +13,10 @@ from .rendering import render_turn
 EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
 
-def _read_stdin(prompt: str, lines: "asyncio.Queue[str | None]", loop: asyncio.AbstractEventLoop) -> None:
+def _read_stdin(lines: "asyncio.Queue[str | None]", loop: asyncio.AbstractEventLoop) -> None:
     while True:
         try:
-            line = input(prompt)
+            line = input()
         except (EOFError, KeyboardInterrupt):
             loop.call_soon_threadsafe(lines.put_nowait, None)
             return
@@ -26,7 +26,7 @@ def _read_stdin(prompt: str, lines: "asyncio.Queue[str | None]", loop: asyncio.A
 async def run(app: App) -> None:
     loop = asyncio.get_running_loop()
     lines: asyncio.Queue = asyncio.Queue()
-    threading.Thread(target=_read_stdin, args=("user：", lines, loop), daemon=True).start()
+    threading.Thread(target=_read_stdin, args=(lines, loop), daemon=True).start()
 
     main_task = asyncio.current_task()
 
@@ -43,6 +43,7 @@ async def run(app: App) -> None:
 
     try:
         while True:
+            print("user：", end="", flush=True)
             try:
                 raw = await lines.get()
             except asyncio.CancelledError:
