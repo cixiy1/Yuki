@@ -92,6 +92,10 @@ python 工具也经子进程运行，与 command 共用护栏。默认限制 CPU
 可设置无特权用户降权、`command` 入口命令白名单（`allowed_binaries`）。沙箱与审批叠加：
 审批决定「放不放行」，沙箱决定「能干什么」。详见 [kernel.md 7.0 节](../kernel.md)。
 
+`shell` 内置工具只负责执行传入的命令：调用方通过 `sandbox` 参数二选一——
+`sandbox: true` 在降权沙箱中运行，`sandbox: false` 以当前用户运行。具体运行环境
+（降权能否真正生效、以哪个用户运行）由外部软件推入内核的 `Sandbox` 设定决定，内核只照执行、不自行判断或更改。
+
 ## 会话与包管理命令
 
 - `/save <名字>`：把当前会话写入 `data/sessions/`，索引进 SQLite。
