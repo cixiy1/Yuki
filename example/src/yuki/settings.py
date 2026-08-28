@@ -5,6 +5,7 @@ from pathlib import Path
 
 # noinspection PyUnresolvedReferences
 from yuki_kernel.config import Settings
+from yuki_kernel.skills import BasicEnvironment
 
 EXAMPLE_ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -39,6 +40,26 @@ def _resolve_path(value: str, default: Path) -> Path:
     return path if path.is_absolute() else EXAMPLE_ROOT / path
 
 
+def _build_environment() -> BasicEnvironment | None:
+    """宿主侧注入执行环境：有虚机环境时让工具真正跑在 venv 里。
+
+    未设置 VIRTUAL_ENV 则返回 None，由内核回退到默认 BasicEnvironment。
+    强隔离（容器/Seatbelt/Landlock）不在此处处理，留给宿主把内核整体放进隔离运行。
+    """
+    venv = os.getenv("VIRTUAL_ENV")
+    if not venv:
+        return None
+    bin_dir = Path(venv) / ("Scripts" if os.name == "nt" else "bin")
+    python_path = str(bin_dir / ("python.exe" if os.name == "nt" else "python"))
+    return BasicEnvironment(
+        python_path=python_path,
+        base_env={
+            "VIRTUAL_ENV": venv,
+            "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+        },
+    )
+
+
 def _load_dotenv() -> None:
     try:
         # noinspection PyUnresolvedReferences
@@ -68,4 +89,5 @@ def load_settings() -> Settings:
         retry_max=_int_env("AGENT_RETRY_MAX", 3),
         retry_base=_float_env("AGENT_RETRY_BASE", 0.5),
         data_dir=_resolve_path(os.getenv("DATA_DIR", ""), EXAMPLE_ROOT / "data"),
+        environment=_build_environment(),
     )
