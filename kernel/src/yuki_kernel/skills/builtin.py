@@ -16,8 +16,8 @@ BUILTIN_TOOLS: list[Tool] = [
             "handler": "get_environment_info",
         },
     },{
-        "name": "shell",
-        "description": "在终端/shell 中执行命令并返回标准输出与标准错误；适配各类 POSIX 终端。默认在降权沙箱中运行（无特权用户），可信环境下可传 sandbox: false 关闭降权。",
+        "name": "terminal",
+        "description": "在终端/terminal 中执行命令并返回标准输出与标准错误；适配各类 POSIX 终端。默认在降权沙箱中运行（无特权用户），可信环境下可传 sandbox: false 关闭降权。",
         "parameters": {
             "type": "object",
             "properties": {
@@ -35,8 +35,8 @@ BUILTIN_TOOLS: list[Tool] = [
         },
         "entry": {
             "type": "python",
-            "module": "builtins/shell.py",
-            "handler": "run_shell",
+            "module": "builtins/terminal.py",
+            "handler": "run_terminal",
         },
     },
 ]

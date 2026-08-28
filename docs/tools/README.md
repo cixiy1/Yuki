@@ -71,13 +71,13 @@ example/packages/
 - `BUILTIN_TOOLS`：函数工具，`entry` 格式与外置包一致（支持 python 和 command 入口）。
 - `BUILTIN_PROMPTS`：内置提示词，`path` 指向 `builtins/prompts/` 下的 Markdown 文件。
 
-工具实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`，例如 `environment.py`、`shell.py`。内置工具
+工具实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`，例如 `environment.py`、`terminal.py`。内置工具
 始终在上下文中，不参与外置包的按需加载。
 
 ### 现有内置工具
 
 - `get_environment_info`：读取操作系统、Python 版本、工作目录等环境信息，帮助模型生成正确命令。
-- `shell`：在终端/shell 中执行命令（经 `/bin/sh -c`，适配各 POSIX 终端），返回退出码、标准输出、标准错误。
+- `terminal`：在终端/shell 中执行命令（经 `/bin/sh -c`，适配各 POSIX 终端），返回退出码、标准输出、标准错误。
   默认在降权沙箱中运行（`user="nobody"`）；调用方可传 `sandbox: false` 关闭降权（仅在可信环境）。
   降权是否真正生效由运行时环境与注入的 `Sandbox` 实现决定，详见下文「安全」。
 
@@ -92,7 +92,7 @@ python 工具也经子进程运行，与 command 共用护栏。默认限制 CPU
 可设置无特权用户降权、`command` 入口命令白名单（`allowed_binaries`）。沙箱与审批叠加：
 审批决定「放不放行」，沙箱决定「能干什么」。详见 [kernel.md 7.0 节](../kernel.md)。
 
-`shell` 内置工具只负责执行传入的命令：调用方通过 `sandbox` 参数二选一——
+`terminal` 内置工具只负责执行传入的命令：调用方通过 `sandbox` 参数二选一——
 `sandbox: true` 在降权沙箱中运行，`sandbox: false` 以当前用户运行。具体运行环境
 （降权能否真正生效、以哪个用户运行）由外部软件推入内核的 `Sandbox` 设定决定，内核只照执行、不自行判断或更改。
 

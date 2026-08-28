@@ -19,7 +19,7 @@ if _SRC not in sys.path:
 from yuki_kernel.skills.sandbox import BasicSandbox, RunResult, SandboxConfig
 
 
-def run_shell(cmd: str, sandbox: bool = True) -> str:
+def run_terminal(cmd: str, sandbox: bool = True) -> str:
     """在 shell 中执行命令并返回结果文本。
 
     cmd: 要执行的命令字符串（经 /bin/sh -c 运行，适配各 POSIX 终端）。
