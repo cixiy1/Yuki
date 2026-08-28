@@ -1,7 +1,6 @@
 """上下文摘要契约。"""
 
 import pytest
-
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.core.context.budget import estimate_tokens
 from yuki_kernel.providers import ChatChunk

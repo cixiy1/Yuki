@@ -1,7 +1,6 @@
 """中间件与事件总线契约。"""
 
 import pytest
-
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.core.events import AgentEvent, EventBus, Middleware
 from yuki_kernel.providers import ChatChunk

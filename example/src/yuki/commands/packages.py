@@ -35,7 +35,7 @@ async def handle_pkg(app: App, arg: str) -> None:
                 app.settings.packages_dir,
                 available=app.settings.packages or None,
             ))
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - CLI 安装命令兜底，需捕获一切异常
             print(f"安装失败：{err}")
     elif sub == "remove":
         if not ref:
@@ -48,7 +48,7 @@ async def handle_pkg(app: App, arg: str) -> None:
                 app.settings.packages_dir,
                 available=app.settings.packages or None,
             ))
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - CLI 卸载命令兜底，需捕获一切异常
             print(f"卸载失败：{err}")
     elif sub == "list":
         infos = app.package_manager.list_installed()
