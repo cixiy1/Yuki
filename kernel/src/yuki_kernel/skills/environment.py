@@ -24,7 +24,6 @@ class Environment:
     """执行环境抽象：工具统一经它执行命令。"""
 
     python_path: str = sys.executable
-    base_env: dict[str, str]
 
     def __init__(self) -> None:
         self.base_env: dict[str, str] = {}
