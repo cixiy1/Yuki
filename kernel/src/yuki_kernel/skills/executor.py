@@ -2,11 +2,11 @@
 
 import json
 import os
-import sys
 from pathlib import Path
 from typing import Any
 
-from .sandbox import BasicSandbox, RunResult, Sandbox
+from .environment import BasicEnvironment, Environment
+from .sandbox import RunResult
 from .types import Tool, ToolEntry
 
 # python 工具在子进程内的引导脚本：加载模块、取 handler、调用、打印结果；
@@ -49,28 +49,24 @@ def run_handler(handler: Any, arguments: dict[str, Any]) -> str:
 
 
 class ToolExecutor:
-    def __init__(self, sandbox: Sandbox | None = None):
-        self.sandbox = sandbox or BasicSandbox()
+    def __init__(self, environment: Environment | None = None):
+        self.environment = environment or BasicEnvironment()
 
     @staticmethod
     def _is_builtin(tool: Tool) -> bool:
         return tool.get("package") == "builtin"
 
-    def _sandbox_run(self, tool: Tool, command: list[str], payload: str) -> str:
+    def _env_run(self, tool: Tool, command: list[str], payload: str) -> str:
         """内置工具继承宿主环境与工作目录（内核自带、可信）；
-        外置包工具按沙箱策略执行（清空环境、cwd 为包目录）。"""
+        外置包工具按环境策略执行（基础环境、cwd 为包目录）。"""
         if self._is_builtin(tool):
-            return self._to_result(
-                self.sandbox.run(
-                    command,
-                    Path.cwd(),
-                    payload,
-                    timeout=_TIMEOUT,
-                    env=dict(os.environ),
-                )
-            )
+            env = {**self.environment.base_env, **os.environ}
+            cwd = Path.cwd()
+        else:
+            env = dict(self.environment.base_env) if self.environment.base_env else None
+            cwd = Path(tool["package_dir"])
         return self._to_result(
-            self.sandbox.run(command, Path(tool["package_dir"]), payload, timeout=_TIMEOUT)
+            self.environment.run(command, cwd, payload, timeout=_TIMEOUT, env=env)
         )
 
     @staticmethod
@@ -98,7 +94,7 @@ class ToolExecutor:
         if not module_path.is_file():
             return f"无法加载模块：{module_path}"
         command = [
-            sys.executable,
+            self.environment.python_path,
             "-c",
             _PY_BOOTSTRAP,
             str(module_path),
@@ -106,7 +102,7 @@ class ToolExecutor:
             entry.get("method", "run"),
         ]
         payload = json.dumps(arguments, ensure_ascii=False)
-        return self._sandbox_run(tool, command, payload)
+        return self._env_run(tool, command, payload)
 
     def execute_command(self, tool: Tool, arguments: dict[str, Any]) -> str:
         try:
@@ -115,8 +111,8 @@ class ToolExecutor:
             return str(err)
         if entry.get("type") != "command":
             return f"入口类型不是 command：{entry.get('type')}"
-        command = [part.replace("{python}", sys.executable) for part in entry.get("command", [])]
+        command = [part.replace("{python}", self.environment.python_path) for part in entry.get("command", [])]
         if not command:
             return "command 入口需要非空命令列表"
         payload = json.dumps(arguments, ensure_ascii=False)
-        return self._sandbox_run(tool, command, payload)
+        return self._env_run(tool, command, payload)

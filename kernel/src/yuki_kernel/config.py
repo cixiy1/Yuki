@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .skills.sandbox import SandboxConfig
+from .skills.environment import Environment
 
 
 @dataclass
@@ -25,4 +25,4 @@ class Settings:
     retry_max: int = 3
     retry_base: float = 0.5
     data_dir: Path | None = None
-    sandbox: SandboxConfig | None = None
+    environment: Environment | None = None
