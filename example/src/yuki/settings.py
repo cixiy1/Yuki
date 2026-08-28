@@ -3,9 +3,12 @@
 import os
 from pathlib import Path
 
+# isort: off
 # noinspection PyUnresolvedReferences
 from yuki_kernel.config import Settings
+# noinspection PyUnresolvedReferences
 from yuki_kernel.skills import BasicEnvironment
+# isort: on
 
 EXAMPLE_ROOT = Path(__file__).resolve().parent.parent.parent
 

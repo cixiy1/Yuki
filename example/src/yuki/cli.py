@@ -1,7 +1,5 @@
 """Yuki 示例聊天外壳：只保留主循环。"""
 
-import asyncio
-
 # noinspection PyUnresolvedReferences
 from yuki_kernel.core.app import App
 
@@ -13,7 +11,7 @@ EXIT_COMMANDS = {"exit", "quit", "q", "退出"}
 
 async def run(app: App) -> None:
     while True:
-        raw = await asyncio.to_thread(input, "user：")
+        raw = input("user：")
         line = raw.strip()
         if not line:
             continue
