@@ -3,7 +3,13 @@
 import shutil
 
 import pytest
-from yuki_kernel.skills import BasicSandbox, SandboxConfig, ToolRegistry
+
+from yuki_kernel.skills import (
+    BasicEnvironment,
+    BasicSandbox,
+    SandboxConfig,
+    ToolRegistry,
+)
 
 
 @pytest.mark.skipif(shutil.which("python3") is None, reason="需要 python3")
@@ -33,7 +39,7 @@ def test_python_tool_runs_out_of_process(tmp_path):
         "def add(a: int, b: int) -> str:\n    return str(a + b)\n",
         encoding="utf-8",
     )
-    registry = ToolRegistry(None, sandbox=BasicSandbox(SandboxConfig()))
+    registry = ToolRegistry(None, environment=BasicEnvironment(BasicSandbox(SandboxConfig())))
     registry.register_tool(
         {
             "name": "add",
@@ -52,7 +58,7 @@ def test_sandbox_applied_to_command_tool(tmp_path):
     package_dir.mkdir()
     registry = ToolRegistry(
         None,
-        sandbox=BasicSandbox(SandboxConfig(allowed_binaries=["python3"])),
+        environment=BasicEnvironment(BasicSandbox(SandboxConfig(allowed_binaries=["python3"]))),
     )
     registry.register_tool(
         {

@@ -15,6 +15,24 @@ BUILTIN_TOOLS: list[Tool] = [
             "module": "builtins/environment.py",
             "handler": "get_environment_info",
         },
+    },{
+        "name": "terminal",
+        "description": "在终端/terminal 中执行命令并返回标准输出与标准错误；适配各类 POSIX 终端。沙箱与降权由宿主注入内核的 Sandbox 设定决定，工具本身不配置权限。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "cmd": {
+                    "type": "string",
+                    "description": "要执行的命令字符串，经 /bin/sh -c 运行",
+                },
+            },
+            "required": ["cmd"],
+        },
+        "entry": {
+            "type": "python",
+            "module": "builtins/terminal.py",
+            "handler": "run_terminal",
+        },
     },
 ]
 

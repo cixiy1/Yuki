@@ -1,6 +1,7 @@
 """长期记忆契约。"""
 
 import pytest
+
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.core.memory import MemoryStore
 from yuki_kernel.skills import ToolRegistry

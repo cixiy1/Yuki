@@ -74,8 +74,14 @@ example/packages/
 - `BUILTIN_TOOLS`：函数工具，`entry` 格式与外置包一致（支持 python 和 command 入口）。
 - `BUILTIN_PROMPTS`：内置提示词，`path` 指向 `builtins/prompts/` 下的 Markdown 文件。
 
-工具实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`，例如 `environment.py`。内置工具
+工具实现代码放在 `kernel/src/yuki_kernel/skills/builtins/`，例如 `environment.py`、`terminal.py`。内置工具
 始终在上下文中，不参与外置包的按需加载。
+
+### 现有内置工具
+
+- `get_environment_info`：读取操作系统、Python 版本、工作目录等环境信息，帮助模型生成正确命令。
+- `terminal`：在终端/shell 中执行命令（经 `/bin/sh -c`，适配各 POSIX 终端），返回退出码、标准输出、标准错误。
+  工具本身不配置权限，沙箱与降权由宿主注入内核的 `Sandbox` 设定决定，详见下文「安全」。
 
 ## 安全
 
@@ -87,6 +93,12 @@ example/packages/
 python 工具也经子进程运行，与 command 共用护栏。默认限制 CPU/内存/文件大小、清空环境；
 可设置无特权用户降权、`command` 入口命令白名单（`allowed_binaries`）。沙箱与审批叠加：
 审批决定「放不放行」，沙箱决定「能干什么」。详见 [kernel.md 7.0 节](../kernel.md)。
+
+`terminal` 内置工具只负责执行传入的命令，**自己不构造沙箱**：命令经子进程执行，统一由
+宿主在注册内核时注入的 `Environment` 托管——这层环境是内核级、所有工具共用（terminal / python /
+command 都走它），不是 terminal 专属。具体运行环境（用哪个解释器、基础环境变量、是否降权、
+以哪个用户运行、网络/文件范围）由外部软件推入内核的 `Environment` 设定决定，内核只照执行、
+不自行判断或更改。
 
 ## 会话与包管理命令
 

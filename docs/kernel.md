@@ -502,39 +502,52 @@ while calls:
 
 ## 7. 工具
 
-### 7.0 工具执行沙箱
+### 7.0 工具执行环境（沙箱）
 
 外置包可能执行任意 Python 代码或系统命令。内核默认不再在进程内 `exec` 任意代码：
-**python 工具也经子进程执行**，与 `command` 入口共用一层 OS 级沙箱（`BasicSandbox`），
-纯标准库实现，不引入新依赖。护栏包括：
+**python 工具也经子进程执行**，与 `command` 入口、内置 `terminal` 工具共用**同一个**
+宿主注入的 `Environment`，由它统一决定「命令在什么环境里跑」。工具本身不构造环境——
+`terminal` 不自建沙箱，python/command 工具也走这同一层。
 
-- 降权到无特权用户（`SandboxConfig.user`，如 `"nobody"`）。
-- 降权用户在构造沙箱时校验，不存在会抛 `ValueError`，不会静默继续以当前用户执行。
-- 限制 CPU 时间、地址空间、单文件写入大小（`cpu_seconds` / `memory_bytes` / `file_bytes`）。
-- 默认清空子进程环境变量，只注入 `extra_env` 指定的项。
-- `command` 入口可执行文件白名单（`allowed_binaries`），不在名单内直接拒绝。
+`Environment` 同时承载两个面（A 方案合成一个对象，宿主注册内核时一次性注入）：
 
-沙箱降低的是「工具能干什么」的上限，不是替代宿主对包来源的信任审查——仍只加载你信任的包。
-要更强的隔离（容器 / firejail / nsjail / seccomp 断网），实现 `Sandbox` 接口后注入：
+- **隔离面（`run`）**：命令在何种 OS 隔离下执行（降权、资源阀、网络/文件范围），内部委托 `Sandbox` 实现。
+- **运行面（`python_path` / `base_env`）**：用哪个 Python 解释器、基础环境变量（venv 的 `PATH`/`PYTHONPATH` 等），供 python 工具与命令解析使用。
+
+默认 `BasicEnvironment` 只是开发兜底：当前用户、宿主完整环境、标准库 `BasicSandbox` 资源阀
+（CPU/内存/单文件上限），`python_path` 为当前解释器、`base_env` 为空。生产应由宿主注入更强的
+`Environment`（venv / 容器 / Seatbelt / Landlock）。`BasicEnvironment` 可这样定制：
 
 ```text
 from yuki_kernel import App, Settings, ToolRegistry
-from yuki_kernel.skills import BasicSandbox, SandboxConfig
+from yuki_kernel.skills import BasicEnvironment, BasicSandbox, SandboxConfig
 
-settings = Settings(
-    provider="openai",
-    model="glm-4-flash",
-    openai_api_key="你的Key",
-    sandbox=SandboxConfig(user="nobody", cpu_seconds=10, allowed_binaries=["python3"]),
+# 托管给外部软件创建的虚拟环境，并叠加降权与资源阀
+env = BasicEnvironment(
+    sandbox=BasicSandbox(SandboxConfig(user="nobody", cpu_seconds=10)),
+    python_path="/path/to/venv/bin/python",
+    base_env={"PATH": "/path/to/venv/bin:/usr/bin", "VIRTUAL_ENV": "/path/to/venv"},
 )
 
-# App 会自动把 settings.sandbox 透传给 ToolRegistry
-# 也可以直接构造带沙箱的注册表：
-registry = ToolRegistry(packages_dir="packages", sandbox=BasicSandbox(SandboxConfig(user="nobody")))
+settings = Settings(provider="openai", model="glm-4-flash", openai_api_key="你的Key", environment=env)
+# App 会自动把 settings.environment 透传给 ToolRegistry；也可直接：
+registry = ToolRegistry(packages_dir="packages", environment=env)
 ```
 
-注意：子进程默认继承当前用户权限；不设置 `user` 时沙箱仅提供资源上限与命令白名单。
-审批（见 7.4 节）是「是否放行」闸门，沙箱是「能干什么」阀门，两者叠加使用。
+执行时的环境规则：
+
+- 内置工具（含 `terminal`）继承宿主环境并叠加 `base_env`：`{**base_env, **os.environ}`；
+  外置包工具只给 `base_env`（无宿主泄漏）。
+- python 工具用 `environment.python_path` 启动解释器，从而跑在注入的 venv 里。
+- 资源阀与可选降权由内部 `BasicSandbox` 提供：CPU 时间、地址空间、单文件写入上限；
+  降权用户在构造时校验，不存在抛 `ValueError`。
+
+注意：子进程默认继承当前用户权限；`setuid` 到别的 uid（如 `nobody`）**只有 root 能成功**，
+普通用户下会失败。普通用户想要真正降权，须把整个内核跑在容器 / Seatbelt / Landlock 等
+宿主隔离里，或注入实现了强降级的自定义 `Environment`。
+
+沙箱降低的是「工具能干什么」的上限，不是替代宿主对包来源的信任审查——仍只加载你信任的包。
+审批（见 7.4 节）是「是否放行」闸门，环境是「能干什么」阀门，两者叠加使用。
 
 ### 7.1 工具注册表
 

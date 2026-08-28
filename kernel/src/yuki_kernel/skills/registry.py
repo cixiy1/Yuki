@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import Any, cast
 
 from .builtin import BUILTIN_PROMPTS, BUILTIN_TOOLS
+from .environment import BasicEnvironment, Environment
 from .executor import ToolExecutor, require_entry
 from .external import discover_packages, load_package
 from .meta import META_NAMES, META_TOOLS
-from .sandbox import BasicSandbox, Sandbox
 from .types import Tool
 
 PathLike = str | Path
@@ -45,13 +45,13 @@ class ToolRegistry:
         available: list[str] | None = None,
         preload: list[str] | None = None,
         memory_searcher: Callable[[str], str] | None = None,
-        sandbox: Sandbox | None = None,
+        environment: Environment | None = None,
     ):
         self._tools: dict[str, Tool] = {}
         self._prompts: dict[str, dict[str, Any]] = {}
         self._packages: dict[str, dict[str, Any]] = {}
         self._active_packages: set[str] = set()
-        self._executor = ToolExecutor(sandbox or BasicSandbox())
+        self._executor = ToolExecutor(environment or BasicEnvironment())
         self.memory_searcher = memory_searcher
         self.package_scan = PackageScan()
         self.load_builtin()

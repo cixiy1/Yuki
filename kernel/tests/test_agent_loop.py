@@ -1,6 +1,7 @@
 """工具闭环契约：turn_stream 事件。"""
 
 import pytest
+
 from yuki_kernel.core.agent import Agent
 from yuki_kernel.providers import ChatChunk, Provider
 from yuki_kernel.skills import ToolRegistry
