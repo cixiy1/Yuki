@@ -14,11 +14,23 @@ from __future__ import annotations
 
 import contextlib
 import os
-import pwd
-import resource
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+
+_HAS_PWD = True
+_HAS_RESOURCE = True
+_IS_WINDOWS = os.name == "nt"
+
+try:
+    import pwd
+except ImportError:  # Windows
+    _HAS_PWD = False
+
+try:
+    import resource
+except ImportError:  # Windows
+    _HAS_RESOURCE = False
 
 
 @dataclass
@@ -65,6 +77,8 @@ class BasicSandbox(Sandbox):
     def _resolve_identity(user: str | None) -> tuple[int, int] | None:
         if user is None:
             return None
+        if not _HAS_PWD:
+            raise ValueError(f"当前平台不支持用户降权：{user}")
         try:
             account = pwd.getpwnam(user)
         except KeyError as err:
@@ -77,14 +91,16 @@ class BasicSandbox(Sandbox):
         if self._identity is not None:
             gid, uid = self._identity
             # 先组后用户，避免丢失组查找能力
-            os.setgid(gid)
-            os.setuid(uid)
-        with contextlib.suppress(ValueError, OSError):
-            resource.setrlimit(resource.RLIMIT_CPU, (cfg.cpu_seconds, cfg.cpu_seconds))
-        with contextlib.suppress(ValueError, OSError):
-            resource.setrlimit(resource.RLIMIT_AS, (cfg.memory_bytes, cfg.memory_bytes))
-        with contextlib.suppress(ValueError, OSError):
-            resource.setrlimit(resource.RLIMIT_FSIZE, (cfg.file_bytes, cfg.file_bytes))
+            with contextlib.suppress(AttributeError):
+                os.setgid(gid)
+                os.setuid(uid)
+        if _HAS_RESOURCE:
+            with contextlib.suppress(ValueError, OSError):
+                resource.setrlimit(resource.RLIMIT_CPU, (cfg.cpu_seconds, cfg.cpu_seconds))
+            with contextlib.suppress(ValueError, OSError):
+                resource.setrlimit(resource.RLIMIT_AS, (cfg.memory_bytes, cfg.memory_bytes))
+            with contextlib.suppress(ValueError, OSError):
+                resource.setrlimit(resource.RLIMIT_FSIZE, (cfg.file_bytes, cfg.file_bytes))
 
     def run(
         self,
@@ -113,7 +129,7 @@ class BasicSandbox(Sandbox):
                 capture_output=True,
                 timeout=timeout,
                 env=env,
-                preexec_fn=self._preexec,
+                preexec_fn=None if _IS_WINDOWS else self._preexec,
             )
         except subprocess.TimeoutExpired:
             return RunResult(1, "", "工具执行超时")
