@@ -33,7 +33,25 @@ BUILTIN_TOOLS: list[Tool] = [
             "module": "builtins/terminal.py",
             "handler": "run_terminal",
         },
-    },
+    },{
+        "name": "run_sleep",
+        "description": "休息一会儿以等待工具结果等",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "number",
+                    "description": "要等待的时间，单位秒"
+                }
+            },
+            "required": ["time"],
+        },
+        "entry": {
+            "type": "python",
+            "module": "builtins/sleep.py",
+            "handler": "run_sleep",
+        }
+    }
 ]
 
 BUILTIN_PROMPTS = [

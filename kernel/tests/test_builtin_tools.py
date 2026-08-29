@@ -27,6 +27,22 @@ def test_environment_info_available():
     assert "Python" in content
 
 
+def test_run_sleep_tool_in_registry():
+    registry = ToolRegistry(None)
+
+    # 确认工具已经注册进 registry
+    names = [tool["function"]["name"] for tool in registry.tools]
+    assert "run_sleep" in names
+
+    # 调用参数为空 / time=0
+    resp_err = registry.execute("run_sleep", {"time": 0})
+    assert "错误：请输入等待时间" in resp_err
+
+    # 正常调用
+    resp_ok = registry.execute("run_sleep", {"time": 3})
+    assert "等待：3s" in resp_ok
+
+
 def test_scan_packages_returns_data_without_printing(weather_package, capsys):
     registry = ToolRegistry(None)
 
