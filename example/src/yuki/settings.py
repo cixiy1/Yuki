@@ -76,7 +76,7 @@ def load_settings() -> Settings:
     _load_dotenv()
     return Settings(
         provider=os.getenv("AGENT_PROVIDER", "openai"),
-        model=os.getenv("AGENT_MODEL", "glm-4-flash"),
+        model=os.getenv("AGENT_MODEL", ""),
         think=_bool_env("AGENT_THINK", True),
         openai_base_url=os.getenv("OPENAI_BASE_URL") or None,
         openai_api_key=os.getenv("OPENAI_API_KEY") or None,
