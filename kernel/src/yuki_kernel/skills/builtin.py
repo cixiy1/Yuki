@@ -34,8 +34,8 @@ BUILTIN_TOOLS: list[Tool] = [
             "handler": "run_terminal",
         },
     },{
-        "name": "run_sleep",
-        "description": "休息一会儿以等待工具结果等",
+        "name": "sleep",
+        "description": "先调用output输出等待提示信息，告知将等待多少秒；调用后需再调用 run_sleep 实际执行等待",
         "parameters": {
             "type": "object",
             "properties": {
@@ -49,8 +49,28 @@ BUILTIN_TOOLS: list[Tool] = [
         "entry": {
             "type": "python",
             "module": "builtins/sleep.py",
-            "handler": "run_sleep",
-        }
+            "handler": "Sleep",
+            "method": "output",
+        },
+    },{
+        "name": "run_sleep",
+        "description": "实际等待指定秒数；先调用 sleep 获得等待提示后再调用本工具执行等待",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "number",
+                    "description": "要等待的时间，单位秒"
+                }
+            },
+            "required": ["time"],
+        },
+        "entry": {
+            "type": "python",
+            "module": "builtins/sleep.py",
+            "handler": "Sleep",
+            "method": "run_sleep",
+        },
     }
 ]
 

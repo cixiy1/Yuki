@@ -27,20 +27,29 @@ def test_environment_info_available():
     assert "Python" in content
 
 
-def test_run_sleep_tool_in_registry():
+def test_sleep_tools_in_registry():
     registry = ToolRegistry(None)
 
-    # 确认工具已经注册进 registry
+    # 确认两个工具已注册
     names = [tool["function"]["name"] for tool in registry.tools]
+    assert "sleep" in names
     assert "run_sleep" in names
 
-    # 调用参数为空 / time=0
+    # sleep（output）错误参数
+    resp_err = registry.execute("sleep", {"time": 0})
+    assert "错误：请输入等待时间" in resp_err
+
+    # sleep（output）正常调用——只输出等待提示，不实际睡眠
+    resp_output = registry.execute("sleep", {"time": 3})
+    assert "等待：3s" in resp_output
+
+    # run_sleep 错误参数
     resp_err = registry.execute("run_sleep", {"time": 0})
     assert "错误：请输入等待时间" in resp_err
 
-    # 正常调用
+    # run_sleep 正常调用——实际睡眠
     resp_ok = registry.execute("run_sleep", {"time": 3})
-    assert "等待：3s" in resp_ok
+    assert "等待完成：3s" in resp_ok
 
 
 def test_scan_packages_returns_data_without_printing(weather_package, capsys):
